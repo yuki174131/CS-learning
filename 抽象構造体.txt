@@ -1,0 +1,129 @@
+抽象構造体 - Numeric
+オブジェクト指向プログラミングにおける抽象クラスの活用には、いくつかの洗練された側面が存在する。
+その一つとして、抽象クラスはサブクラスに対し抽象メソッドの実装を求めると同時に、一般的なデータ構造に対する一連のメソッドを提供することができる。
+特に、継承階層の根に位置する最も一般的なデータ構造では、具体的な実装詳細を定めずに抽象性を保つことが好ましい。
+
+さらに、抽象クラスはポリモーフィズムの原則を活用することができる。
+これにより、一般的な抽象構造を参照しながら具体的なオブジェクトをインスタンス化することが可能となる。
+抽象クラスの挙動は具体的な実装を除いて保証されており、利用可能である。
+
+具体的な例として、Number のような汎用的なデータ構造の作成を考えてみる。
+全ての数値は、int型、double型、byte型、16進数、文字コードなどの様々なデータ型をとりえる。
+
+https://gyazo.com/9d72002027cf3107f88d62510c2fa823
+
+これらの数値の種類に対応する抽象的なデータ構造を作成し、オブジェクトデータを int 型、char 型、double 型、byte 型のプリミティブ型に変換する挙動を定義する。
+さらに、16 進数の文字列表現についても扱うことができる。
+
+具体的なクラスがこの Numeric 抽象クラスを拡張する際には、これらの変換を行う具体的な処理を実装する必要がある。
+これにより、様々な数値表現を統一的に扱う強力な抽象化が可能となる。
+
+// Numericは数値を表現する抽象クラスです。
+// getIntegerとgetDoubleという抽象メソッドを持ち、それぞれ数値を整数と浮動小数点数に変換する方法を定義するようサブクラスに要求しています。
+abstract class Numeric{
+    // 以下のメソッド群はNumericの整数表現を取得し、それを各型に変換する役割を果たします。
+    public byte getByte(){
+        // byte型(8ビット)への変換
+        return (byte) this.getInteger();
+    }
+
+    public short getShort(){
+        // short型(16ビット)への変換
+        return (short) this.getInteger();
+    }
+
+    public long getLong(){
+        // long型(64ビット)への変換
+        return (long) this.getInteger();
+    }
+
+    public char getChar(){
+        // char型(16ビット)への変換
+        return (char) this.getInteger();
+    }
+
+    // Numericクラスのサブクラスでは、データを整数として表現する方法を定義する必要があります。
+    public abstract int getInteger();
+
+    // Numericクラスのサブクラスでは、データをdouble型として表現する方法を定義する必要があります。
+    public abstract double getDouble();
+
+    public String toString(){
+        // Numericオブジェクトを文字列に変換します。
+        return this.getClass().getSimpleName() + " of int value: " + this.getInteger();
+    }
+}
+
+// IntegerNumericは内部で整数（int型）を保持し、その値をgetIntegerメソッドで返すとともに、getDoubleメソッドではその値をdouble型にキャストして返します。
+class IntegerNumeric extends Numeric{
+    // IntegerNumericでは、実際のデータはint型で保持されます。
+    private int value;
+
+    // コンストラクタでは、int型の引数を受け取ります。
+    public IntegerNumeric(int value){
+        this.value = value;
+    }
+
+    // 整数表現としては、そのままの値を返します。
+    public int getInteger(){
+        return this.value;
+    }
+
+    // double型表現としては、整数値をdouble型にキャストします。
+    public double getDouble(){
+        return this.value + 0.0;
+    }
+}
+
+// CharNumericは内部で文字（char型）を保持し、その文字を整数として解釈（ASCIIコード等に基づいた整数値）したものをgetIntegerメソッドで返します。
+// また、getDoubleメソッドではその整数値をdouble型にキャストして返します。
+class CharNumeric extends Numeric{
+    // CharNumericでは、実際のデータはchar型で保持されます。
+    private char c;
+
+    // コンストラクタでは、char型またはint型の引数を受け取ります。
+    public CharNumeric(char c){
+        this.c = c;
+    }
+
+    public CharNumeric(int c){
+        this.c = (char) c;
+    }
+
+    // 整数表現としては、charをintにキャストした値を返します。
+    public int getInteger(){
+        return this.c;
+    }
+
+    // double型表現としては、整数表現をdouble型にキャストします。
+    public double getDouble(){
+        return this.getInteger() + 0.0;
+    }
+}
+
+class Main{
+    public static void numericPrinter(Numeric num){
+        // 各型への変換結果を出力します。
+        System.out.println(num);
+        System.out.println("Byte: " + num.getByte());
+        System.out.println("Short: " + num.getShort());
+        System.out.println("Long: " + num.getLong());
+        System.out.println("Char: " + num.getChar());
+        System.out.println("Double: " + num.getDouble());
+        System.out.println();
+    }
+
+    public static void main(String[] args){
+        Numeric num1 = new IntegerNumeric(73);
+        // 大きなビットの整数をバイト(8ビット)に変換しようとすると、変換が失われる可能性があります。
+        Numeric num2 = new IntegerNumeric(23555461);
+        Numeric num3 = new CharNumeric(61);
+
+        numericPrinter(num1);
+        numericPrinter(num2);
+        numericPrinter(num3);
+    }
+}
+
+
+
