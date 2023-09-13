@@ -1,0 +1,597 @@
+関連、集約、コンポジションはオブジェクト間の特定の強い関係を特徴づける概念で、
+これらと対比する形で、より弱い関係を表す依存関係（dependency）という概念が存在する。
+
+依存関係は、あるクラス A が何らかの形でクラス B に依存していて、クラス B の状態や振る舞いの変更がクラス A に影響を及ぼす可能性がある状況を指す。
+https://gyazo.com/1694c37301a37cc45e306d68fffe4ba4
+
+例えば、ある Person クラスを設計した際、2 つの Person オブジェクト（p1 と p2）が、誤って同じ Wallet オブジェクトを参照するようになったとする。
+この場合、p1 の spendMoney() メソッドが呼び出されたとき、p1 が Wallet に対して行った変更は p2に 影響を及ぼす。
+その後、p2 の getCash() メソッドが呼び出されたとき、、p2 の Wallet 内のお金が変わり、その Wallet への依存関係によってその影響が顕在化します。
+
+しかしながら、全ての依存関係が関連とは限らない。
+たとえば、あるメソッドが他のオブジェクトを引数として受け取ったり、特定の型のオブジェクトを返したりする場合、
+そのメソッドと引数や戻り値のオブジェクトとの間には依存関係が生じる。これは一見弱い関係に思えますが、
+依存関係が変わるとそのメソッドが依存するオブジェクトに影響を及ぼす可能性があるため、依存関係は極めて重要な概念となる。
+
+例として、プレイヤー対モンスターの簡単なシミュレーションを作成する。
+
+// PlayerクラスはMonsterクラスに依存しています。この依存関係は主にattackメソッドに現れます。
+class Player{
+    private String username;
+    private int health;
+    private int attack;
+    private int defense;
+
+    // プレイヤーの高さを1.8メートルで初期化
+    private double height = 1.8;
+    private int gold;
+
+    // コンストラクタはPlayerオブジェクトを初期化します。
+    public Player(String username, int health, int attack, int defense, int gold){
+        this.username = username;
+        this.health = health;
+        this.attack = attack;
+        this.defense = defense;
+        this.height = height;
+        this.gold = gold;
+    }
+
+    // getHeightメソッドはプレイヤーの高さを返します。
+    public double getHeight(){
+        return this.height;
+    }
+
+    // attackメソッドはMonsterクラスに依存しています。このメソッドはMonsterオブジェクトを引数に取り、そのMonsterオブジェクトに対する攻撃をシミュレートします。
+    public void attack(Monster monster){
+        System.out.println(this.username + " ATTACKS " + monster.getName());
+        
+        // Monsterの高さがPlayerの高さの3倍以上またはMonsterの防御力がPlayerの攻撃力以下の場合、攻撃は無効となります。
+        if(monster.getHeight() >= this.height *3 || this.attack <= monster.getDefense()) return;
+
+        // それ以外の場合、Playerの攻撃力からMonsterの防御力を引いた数値がMonsterのHPから引かれます。
+        monster.attacked(this.attack - monster.getDefense());
+    }
+
+    // toStringメソッドはPlayerオブジェクトの現状を文字列で表現します。
+    public String toString(){
+        return "Player " + this.username + " - HP:" + this.health +"/Atk:" + this.attack + "/Def:" + this.defense + "/Gold:" + this.gold + "/height:" + this.height + " meters";
+    }
+}
+
+// Monsterクラスは依存関係を持っていません。
+class Monster{
+    private String monster;
+    private int health;
+    private int attack;
+    private int defense;
+    // モンスターの高さをデフォルトで3メートルで初期化
+    private double height = 3;
+
+    // コンストラクタはMonsterオブジェクトを初期化します。
+    public Monster(String monster, int health, int attack, int defense){
+        this.health = health;
+        this.monster = monster;
+        this.attack = attack;
+        this.defense = defense;
+    }
+    
+    // getNameメソッドはモンスターの名前を返します。
+    public String getName(){
+        return this.monster;
+    }
+
+    // getHeightメソッドはモンスターの高さを返します。
+    public double getHeight(){
+        return this.height;
+    }
+
+    // getAttackメソッドはモンスターの攻撃力を返します。
+    public int getAttack(){
+        return this.attack;
+    }
+
+    // getDefenseメソッドはモンスターの防御力を返します。
+    public int getDefense(){
+        return this.defense;
+    }
+
+    // attackedメソッドは、他のオブジェクトから攻撃を受けた時のモンスターの反応をシミュレートします。
+    public void attacked(int hp){
+        this.health -= hp;
+        if(this.health < 0) this.health = 0;
+    }
+
+    // toStringメソッドはMonsterオブジェクトの現状を文字列で表現します。
+    public String toString(){
+        return this.monster + " - HP:" + this.health +"/Atk:" + this.attack + "/Def:" + this.defense + "/height:" + this.height + " meters";
+    }
+}
+
+// Mainクラスのmainメソッドでは、PlayerとMonsterオブジェクトを作成し、シミュレーションを実行します。
+class Main{
+    public static void main(String[] args){
+        Player p1 = new Player("Batrunner", 2000, 200, 60, 1000);
+        Monster gorilla = new Monster("Gorilla", 4000, 40, 100);
+        Monster vampire = new Monster("Vampire", 6000, 160, 20);
+
+        System.out.println(p1);
+        System.out.println(gorilla);
+        System.out.println(vampire);
+
+        p1.attack(gorilla);
+        System.out.println(gorilla);
+    }
+}
+
+プレイヤーの attack メソッドはモンスターの情報を使って攻撃の成否を決定する。
+この関係性は、モンスターの内部データが変化すると、プレイヤーの攻撃処理に影響を及ぼす可能性がある。
+具体的には、モンスターの身長の計算単位がメートルからセンチメートルに変わった場合、プレイヤーの攻撃処理はそれに合わせて動作するか、または調整される必要がある。
+この変化が生じた場合、プレイヤーの攻撃がモンスターに対して適切に機能しなくなる可能性がある。
+これは、一つのクラスの内部実装が変わっただけで、それに依存している他のクラスの動作が予期せぬ形で変わるという、依存性に関連する問題を示している。
+
+class Player{
+    private String username;
+    private int health;
+    private int attack;
+    private int defense;
+    // プレイヤーの身長はメートル単位です。
+    private double height = 1.8;
+    private int gold;
+
+    public Player(String username, int health, int attack, int defense, int gold){
+        this.username = username;
+        this.health = health;
+        this.attack = attack;
+        this.defense = defense;
+        this.height = height;
+        this.gold = gold;
+    }
+
+    public double getHeight(){
+        return this.height;
+    }
+
+    public void attack(Monster monster){
+        System.out.println(this.username + " ATTACKS " + monster.getName());
+
+        // 依存関係がある箇所：モンスターの身長がプレーヤーの3倍以上の場合、またはモンスターの防御力がプレーヤーの攻撃力以下の場合、攻撃は無効になります。
+        // モンスターの身長がセンチメートルに変わったため、この条件は常に真となり、攻撃が常に無効になります。
+        if(monster.getHeight() >= this.height *3 || this.attack <= monster.getDefense()) return;
+
+        monster.attacked(this.attack - monster.getDefense());
+    }
+
+    public String toString(){
+        return "Player " + this.username + " - HP:" + this.health +"/Atk:" + this.attack + "/Def:" + this.defense + "/Gold:" + this.gold + "/height:" + this.height + " meters";
+    }
+}
+
+class Monster{
+    private String monster;
+    private int health;
+    private int attack;
+    private int defense;
+
+    // 変更された箇所：モンスターの身長はデフォルトで300センチメートルになりました。プレーヤーがメートルで身長を計算していたため、ここでの変更が依存関係に問題を引き起こします。
+    private double height = 300;
+
+    public Monster(String monster, int health, int attack, int defense){
+        this.health = health;
+        this.monster = monster;
+        this.attack = attack;
+        this.defense = defense;
+    }
+    
+    public String getName(){
+        return this.monster;
+    }
+
+    public double getHeight(){
+        return this.height;
+    }
+
+    public int getAttack(){
+        return this.attack;
+    }
+
+    public int getDefense(){
+        return this.defense;
+    }
+
+    public void attacked(int hp){
+        this.health -= hp;
+        if(this.health < 0) this.health = 0;
+    }
+
+    public String toString(){
+        return this.monster + " - HP:" + this.health +"/Atk:" + this.attack + "/Def:" + this.defense + "/height:" + this.height + " centimeters"; // heightはセンチメートルです。
+    }
+}
+
+class Main{
+    public static void main(String[] args){
+        Player p1 = new Player("Batrunner", 2000, 200, 60, 1000);
+        Monster gorilla = new Monster("Gorilla", 4000, 40, 100);
+        Monster vampire = new Monster("Vampire", 6000, 160, 20);
+
+        System.out.println(p1);
+        System.out.println(gorilla);
+        System.out.println(vampire);
+
+        p1.attack(gorilla); 
+        // ゴリラの体力が変わらないはずです。なぜなら、プレイヤーの攻撃ロジックが依存しているモンスターの身長の単位が変わったからです。
+        System.out.println(gorilla);
+    }
+}
+
+依存関係は UML 上で破線と矢印で表現される。
+矢印は依存の方向を指し示すため、依存元のクラスから依存先のクラスへ向かう。例えば、下記の図では、Player クラスは Monster クラスに依存している。
+つまり、Player クラスの一部の機能（例えば"攻撃"）は、Monster クラスの設計や機能に依存しているということを示している。
+この依存関係があるために、Monster クラスが変更されると、それが Player クラスに影響を及ぼす可能性がある。
+https://gyazo.com/0694e58419561eeb63a6f4147ef17be7
+
+依存関係はソフトウェアの一部が他の部分にどの程度依存しているかを表している。
+そのため、この依存関係がどのように構築されているかを理解していると、ソフトウェアの変更やアップデートが他の部分にどのように影響を及ぼすかを予見することができる。
+
+
+依存性注入
+
+開発者はコメントを使って依存関係を示すことがありますが、依存性注入（dependency injection, DI）という手法を用いて依存関係を明示することもできる。
+依存性注入とは、関数が必要とするクラスのオブジェクトを直接生成するのではなく、そのオブジェクトを外部から渡すことにより、依存関係を明示的にする方法。
+この方法を使用すると、外部のユーザーはクラスが何に依存しているかを明確に理解することはできませんが、開発者はそのメソッドがどのオブジェクトに依存しているかを明確に知ることができる。
+これは関数型プログラミングの考え方に似ており、メソッドがその入力に明示的に依存する形となる。
+
+import java.util.ArrayList;
+
+// プレイヤークラス、ユーザー情報とアクションを管理します
+class Player{
+    private String username;
+    private int health;
+    private int attack;
+    private int defense;
+    private double height = 1.8;
+    private int gold;
+
+    public Player(String username, int health, int attack, int defense, int gold){
+        this.username = username;
+        this.health = health;
+        this.attack = attack;
+        this.defense = defense;
+        this.height = height;
+        this.gold = gold;
+    }
+
+    public String getName(){
+        return this.username;
+    }
+
+    public double getHeight(){
+        return this.height;
+    }
+
+    public void attack(Monster monster){
+        System.out.println(this.username + " ATTACKS " + monster.getName());
+        if(monster.getHeight() >= this.height *3 || this.attack <= monster.getDefense()) return;
+
+        monster.attacked(this.attack - monster.getDefense());
+    }
+
+    public String toString(){
+        return "Player " + this.username + " - HP:" + this.health +"/Atk:" + this.attack + "/Def:" + this.defense + "/Gold:" + this.gold + "/height:" + this.height + " meters";
+    }
+}
+
+// モンスタークラス、各種モンスター情報とアクションを管理します
+class Monster{
+    private String monster;
+    private int health;
+    private int attack;
+    private int defense;
+    private double height = 300;
+
+    public Monster(String monster, int health, int attack, int defense){
+        this.health = health;
+        this.monster = monster;
+        this.attack = attack;
+        this.defense = defense;
+    }
+    
+    public String getName(){
+        return this.monster;
+    }
+
+    public double getHeight(){
+        return this.height;
+    }
+
+    public int getAttack(){
+        return this.attack;
+    }
+
+    public int getDefense(){
+        return this.defense;
+    }
+
+    public void attacked(int hp){
+        this.health -= hp;
+        if(this.health < 0) this.health = 0;
+    }
+
+    public String toString(){
+        return this.monster + " - HP:" + this.health +"/Atk:" + this.attack + "/Def:" + this.defense + "/height:" + this.height + " meters";
+    }
+}
+
+// 座標クラス、生物の座標を管理します
+class Coordinate{
+    public int x;
+    public int y;
+    public int z;
+
+    public Coordinate(int x, int y, int z){
+        this.x = x;
+        this.y = y;
+        this.z = z;
+    }
+
+    public String toString(){
+        return "{x:"+this.x+",y:"+this.y+",z:"+this.z+"}";
+    }
+}
+
+// フィールドクラス、モンスターの位置情報などを管理します
+class Field{
+    private static final int MAX_X = 100000;
+    private static final int MAX_Y = 40000;
+    private static final int MAX_Z = 1000;
+
+    // creaturesはフィールド上に存在するモンスターのリストです。
+    private ArrayList<Monster> creatures;
+
+    // creatureCoordinatesはそれぞれのモンスターの座標を保持するリストです。
+    // これはcreaturesリストの各モンスターに対応しています。つまり、creaturesリストのn番目のモンスターの座標は
+    // creatureCoordinatesリストのn番目の座標となります。このようにリストのインデックスを使用して、モンスターとその座標を関連付けしています。
+    private ArrayList<Coordinate> creatureCoordinates; 
+
+    public Field(){
+        this.creatures = new ArrayList<Monster>();
+        this.creatureCoordinates = new ArrayList<Coordinate>();
+    }
+
+    // フィールドにランダムな位置にモンスターを追加します。
+    // このメソッドではモンスターのパラメータを直接受け取り、その内部で新しいモンスターオブジェクトを作成します。
+    // この場合、他のクラスからはこのメソッドがどのようにモンスターオブジェクトを作成しているか、
+    // また、このメソッドがMonsterクラスにどのように依存しているかがわかりません。
+    public void randomlyAdd(String monster, int health, int attack, int defense){
+        Monster newMonster = new Monster(monster, health, attack, defense);
+        // ランダムな座標
+        Coordinate c = new Coordinate(this.internalRanAlgorithm(1, Field.MAX_X), this.internalRanAlgorithm(1, Field.MAX_Y),this.internalRanAlgorithm(1, Field.MAX_Z));
+
+        this.creatures.add(newMonster);
+        this.creatureCoordinates.add(c);
+    }
+
+    // フィールドにランダムな位置にモンスターを追加します。
+    // このメソッドではモンスターオブジェクト自体を直接受け取ります。
+    // これによりこのメソッドがMonsterクラスに依存していることが明示的になります。
+    // そしてこの依存性は外部（このメソッドを呼び出すクラスやメソッド）にも明らかとなります。
+    public void randomlyAddWithDependency(Monster creature){
+        Coordinate c = new Coordinate(this.internalRanAlgorithm(1, Field.MAX_X), this.internalRanAlgorithm(1, Field.MAX_Y),this.internalRanAlgorithm(1, Field.MAX_Z));
+
+        this.creatures.add(creature);
+        this.creatureCoordinates.add(c);
+    }
+
+    private int internalRanAlgorithm(int min, int max){
+        return (int) (Math.random() * (max - min) + min);
+    }
+
+    public String toString(){
+        //String bufferは、文字列のための不変のデータ構造です。これを使って時間計算量を補うことにします。
+        StringBuffer s = new StringBuffer(""); 
+        for(int i = 0; i < this.creatures.size(); i++){
+            s.append(this.creatures.get(i) + " with coordinates: " + this.creatureCoordinates.get(i) + "\n");      
+        }
+        return s.toString();
+    }
+}
+
+class Main{
+    public static void main(String[] args){
+        Player p1 = new Player("Batrunner", 2000, 200, 60, 1000);
+        Monster gorilla = new Monster("Gorilla", 4000, 40, 100);
+        Monster vampire = new Monster("Vampire", 6000, 160, 20);
+
+        Field world = new Field();
+
+        // このメソッドではモンスターの名前とパラメータを引数として渡すことでモンスターを追加します。
+        // この場合、内部でどのようにモンスターが作成されているか、このメソッドがどのクラスに依存しているかはわかりません。
+        world.randomlyAdd("Dragon", 30000, 400, 400);
+
+        // このメソッドではモンスターオブジェクトを直接引数として渡すことでモンスターを追加します。
+        // この場合、このメソッドがMonsterクラスに依存していることが明示的にわかります。
+        // また、モンスターオブジェクトが既に作成されているため、このメソッド内部でどのようにモンスターが作成されるかを
+        // 考慮する必要がありません。これが依存性注入の一例です。
+        world.randomlyAddWithDependency(gorilla);
+        world.randomlyAddWithDependency(vampire);
+
+        System.out.println(world);
+    }
+}
+
+依存関係を入力として明示することのもう一つの大きな利点は、依存するオブジェクトを自由に切り替える柔軟性を持つこと。
+例えば、メソッドのオーバーロードやインターフェースを用いて、ある特定の動作を持つ異なるオブジェクトを同じメソッドに渡すことが可能.
+
+import java.util.ArrayList;
+
+class Player{
+    private String username;
+    private int health;
+    private int attack;
+    private int defense;
+    private double height = 1.8;
+    private int gold;
+
+    public Player(String username, int health, int attack, int defense, int gold){
+        this.username = username;
+        this.health = health;
+        this.attack = attack;
+        this.defense = defense;
+        this.height = height;
+        this.gold = gold;
+    }
+
+    public String getName(){
+        return this.username;
+    }
+
+    public double getHeight(){
+        return this.height;
+    }
+
+    public void attack(Monster monster){
+        System.out.println(this.username + " ATTACKS " + monster.getName());
+        if(monster.getHeight() >= this.height *3 || this.attack <= monster.getDefense()) return;
+
+        monster.attacked(this.attack - monster.getDefense());
+    }
+
+    public String toString(){
+        return "Player " + this.username + " - HP:" + this.health +"/Atk:" + this.attack + "/Def:" + this.defense + "/Gold:" + this.gold + "/height:" + this.height + " meters";
+    }
+}
+
+class Monster{
+    private String monster;
+    private int health;
+    private int attack;
+    private int defense;
+    private double height = 300;
+
+    public Monster(String monster, int health, int attack, int defense){
+        this.health = health;
+        this.monster = monster;
+        this.attack = attack;
+        this.defense = defense;
+    }
+    
+    public String getName(){
+        return this.monster;
+    }
+
+    public double getHeight(){
+        return this.height;
+    }
+
+    public int getAttack(){
+        return this.attack;
+    }
+
+    public int getDefense(){
+        return this.defense;
+    }
+
+    public void attacked(int hp){
+        this.health -= hp;
+        if(this.health < 0) this.health = 0;
+    }
+
+    public String toString(){
+        return this.monster + " - HP:" + this.health +"/Atk:" + this.attack + "/Def:" + this.defense + "/height:" + this.height + " meters";
+    }
+}
+
+class Coordinate{
+    public int x;
+    public int y;
+    public int z;
+
+    public Coordinate(int x, int y, int z){
+        this.x = x;
+        this.y = y;
+        this.z = z;
+    }
+
+    public String toString(){
+        return "{x:"+this.x+",y:"+this.y+",z:"+this.z+"}";
+    }
+}
+
+class Field{
+    private static final int MAX_X = 100000;
+    private static final int MAX_Y = 40000;
+    private static final int MAX_Z = 1000;
+
+    private ArrayList<Player> creatures;
+    private ArrayList<Coordinate> creatureCoordinates; 
+
+    public Field(){
+        this.creatures = new ArrayList<Player>();
+        this.creatureCoordinates = new ArrayList<Coordinate>();
+    }
+
+    // randomlyAddWithDependencyメソッドは新しいプレイヤーをフィールドに追加します。
+    // このメソッドの依存関係はPlayerクラスにあり、任意のプレイヤーを引数として受け取ります。
+    // 依存関係を引数を通じて明示的に示すことで、他の種類の生物に切り替えるときに柔軟性が得られます。
+    // 現状ではこのメソッドはPlayerオブジェクトのみを受け取りますが、このメソッドをオーバーロードしたり、あるいはPlayerとMonsterが共通のインターフェースを実装するような設計にした場合、このメソッドはMonsterオブジェクトも受け取ることが可能となります。
+    public void randomlyAddWithDependency(Player creature){
+        Coordinate c = new Coordinate(this.internalRanAlgorithm(1, Field.MAX_X), this.internalRanAlgorithm(1, Field.MAX_Y),this.internalRanAlgorithm(1, Field.MAX_Z));
+
+        this.creatures.add(creature);
+        this.creatureCoordinates.add(c);
+    }
+
+    private int internalRanAlgorithm(int min, int max){
+        return (int) (Math.random() * (max - min) + min);
+    }
+
+    public String toString(){
+        StringBuffer s = new StringBuffer(""); 
+        for(int i = 0; i < this.creatures.size(); i++){
+            s.append(this.creatures.get(i) + " with coordinates: " + this.creatureCoordinates.get(i) + "\n");      
+        }
+        return s.toString();
+    }
+}
+
+class Main{
+    public static void main(String[] args){
+        Player p1 = new Player("Batrunner", 2000, 200, 60, 1000);
+        Monster gorilla = new Monster("Gorilla", 4000, 40, 100);
+        Monster vampire = new Monster("Vampire", 6000, 160, 20);
+
+        Field world = new Field();
+
+        // プレイヤーp1をフィールドに追加します。
+        // この時点で、フィールドの依存関係はPlayerクラスにあります。
+        world.randomlyAddWithDependency(p1);
+
+        // 他のプレイヤーもフィールドに追加します。
+        Player p2 = new Player("JokerMan", 2000, 300, 50, 1300);
+        Player p3 = new Player("RichMonopolyLeader", 200, 20, 60, 1000000);
+
+        world.randomlyAddWithDependency(p2);
+        world.randomlyAddWithDependency(p3);
+
+        System.out.println(world);
+    }
+}
+
+制御の反転
+
+制御の反転（inversion of control, IoC）は、オブジェクト指向プログラミングにおいて、依存性の注入（Dependency Injection、DI）と密接に関連している。
+IoC は、プログラムの制御フローが従来の方法とは逆の方向に制御されるという概念である。
+
+従来の手法では、アプリケーションの制御フローは主にアプリケーション自体が担っていた。
+つまり、アプリケーションが他のコンポーネントやクラスを直接制御し、その実行順序や依存関係を管理していた。
+
+制御の反転では、アプリケーションは自らの制御フローをフレームワークのような他の外部エンティティに委任する。
+具体的には、アプリケーションは外部の制御コンテキストやフレームワークによって制御され、必要なタスクや処理の実行順序が外部から与えられる。
+これにより、アプリケーションは個々のコンポーネントやクラスに焦点を当てて開発することができる。
+
+IoC の原則を使用すると、開発者は処理の具体的な詳細から手を引き、自分の目的に合わせたビジネスロジックの構築に専念できる。
+これにより、開発の生産性を向上させ、コードの再利用性と可読性を向上させることができる。
+
+依存性の注入（DI）は、制御の反転を実現するための手法の 1 つ。DI では、依存関係を持つオブジェクト（依存先）を別のオブジェクト（依存注入コンテナ）が管理し、
+必要なタイミングで依存先オブジェクトを注入する。つまり、アプリケーションは自ら依存関係を解決するのではなく、外部のコンテナに依存性の解決を委任することで、制御の反転を実現する。
+これにより、テスト時の依存オブジェクトの差し替えやコードの再利用が容易になる。

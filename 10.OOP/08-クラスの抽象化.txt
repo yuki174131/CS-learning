@@ -1,0 +1,163 @@
+クラスの設計段階で、どの部分を公開するか（つまり、クラスのユーザーが直接使用する部分）と、
+どの部分を隠滅するか（つまり、クラス内部のコード）を決めることが可能で、これをカプセル化といいました。
+
+その結果、クラスの利用者は、公開されたメソッドや変数を通じてクラスとやり取りし、その内部実装やコードの詳細を機にする必要がなくなる。
+これはクラスの安全性を高め、保守性を向上させ、誤った使用を防ぐ助けとなる。
+これを達成するための一つの方法として、契約を用いてクラスをブラックボックスとして扱うことがある。
+
+関数をブラックボックスとして扱う場合、その使用者は以下の 3 つの観点を理解する必要がある。
+- 何を行うのか
+- 何を入力するのか
+- 何を出力するのか
+その関数がどのように具体的に実装されているかについては理解する必要はない。
+これは関数の抽象化と呼ばれる。
+
+クラスの仕様についても同様に、クラスの利用者には、クラスの契約を除いて、その他の全ての情報が非表示となっているのが理想的とされている。
+つまり、クラスの利用者は、クラスの説明、利用可能なpublicコンストラクタ、メソッド、変数、そしてそれらpublicメンバがどのように
+動作するのだけを理解していれば良いとされている。
+
+これはクラスの抽象化と呼ばれ、そのクラスの具体的な実装とその使用方法
+を分離することが可能となる。
+クラスの契約は、そのクラスがどのように使用されるべきかを示すものであり、
+カプセル化はその内部実装と契約によって利用可能となるインターフェースを隔離する。
+
+クラスの契約とは、そのクラスがどのように動作すべきか、または具体的にはどのようにやり取り
+することができるかを定義する一連のルールやプロトコルを指す。
+
+この契約はクラスの公開メソッド、プロパティそして「イベントを通じて定義され、
+これらのメソッドが呼び出された時など、クラスが特定の方法で動作することを保証するもの。
+これらの契約は多くの場合、記述形式で表現され、コード内のコメントやAPIドキュメンテーションとして提供される。
+
+契約の概念は、OOPのカプセル化と抽象化の原則と密接に関連している。
+明確な契約を定義することで、クラスは内部の実装詳細を隠すことができ、プログラムの他の部分が契約に基づいてだけそれとやり取りできる。
+
+クラウの利用者は、契約に記載されている事項のみを使用する。
+これはクラスの利用者が契約を遵守する限り、他のプログラムに影響を与えることなく、
+また壊すことなく、クラスの内部を自由にリファクタリングや拡張できるということを意味する。
+
+全てのメンバ変数がカプセル化されたRGB24クラス
+
+// RGB24クラスはRGB色空間を表現するクラスです。
+class RGB24{
+    // 赤、緑、青の色成分を保持します。値の範囲は0から255までです。
+    private int red;
+    private int green;
+    private int blue;
+
+    // RGB色成分を直接指定するコンストラクタです。
+    public RGB24(int red, int green, int blue){
+        this.red = red;
+        this.green = green;
+        this.blue = blue;
+    }
+
+    // 16進数や2進数の文字列からRGB色成分を設定するコンストラクタです。
+    public RGB24(String inputString){
+        int l = inputString.length();
+
+        // 文字列の長さに応じて、16進数か2進数か判断し、それぞれのメソッドを呼び出します。
+        // 16進数の場合
+        if(l == 6) this.setColorsByHex(inputString);
+        // 2進数の場合
+        else if(l == 24) this.setColorsByBin(inputString);
+        // それ以外は黒に設定します。
+        else this.setAsBlack();
+    }
+
+    // 16進数の文字列からRGB色成分を設定します。
+    public void setColorsByHex(String hex){
+        // 文字列の長さが6でなければ、黒に設定します。
+        if(hex.length() != 6) this.setAsBlack();
+        else{
+            // 文字列を2文字ずつに分割し、それぞれを16進数として解釈して、RGB色成分に設定します。
+            this.red = Integer.parseInt(hex.substring(0,2), 16);
+            this.green = Integer.parseInt(hex.substring(2,4), 16);
+            this.blue = Integer.parseInt(hex.substring(4,6), 16);
+        }
+    }
+
+    // 2進数の文字列からRGB色成分を設定します。
+    public void setColorsByBin(String bin){
+        // 文字列の長さが24でなければ、黒に設定します。
+        if(bin.length() != 24) this.setAsBlack();
+        else{
+            // 文字列を8文字ずつに分割し、それぞれを2進数として解釈して、RGB色成分に設定します。
+            this.red = Integer.parseInt(bin.substring(0,8), 2);
+            this.green = Integer.parseInt(bin.substring(8,16), 2);
+            this.blue = Integer.parseInt(bin.substring(16), 2);
+        }
+    }
+
+    // RGB色成分をすべて0に設定し、黒にします。
+    public void setAsBlack(){
+        this.red = 0;
+        this.green = 0;
+        this.blue = 0;
+    }
+
+    // RGB色成分を16進数の文字列で返します。
+    public String getHex(){
+        String hex = Integer.toHexString(this.red);
+        hex+=Integer.toHexString(this.green);
+        hex+=Integer.toHexString(this.blue);
+
+        return hex;
+    }
+
+    // RGB色成分を2進数の文字列で返します。
+    public String getBits(){
+        return Integer.toBinaryString(Integer.parseInt(this.getHex(), 16));
+    }
+
+    // RGB色成分が最も大きい色を判定し、その色名を返します。
+    public String getColorShade(){
+        if(this.red == this.green && this.green == this.blue) return "greyscale";
+        String[] stringTable = new String[]{"red","green","blue"};
+        int[] values = {this.red, this.green, this.blue};
+
+        int max = values[0];
+        int maxIndex = 0;
+        for(int i = 1; i < values.length; i++){
+            if(max <= values[i]){
+                max = values[i];
+                maxIndex = i;
+            }
+        }
+
+        return stringTable[maxIndex];
+    }
+
+    // RGB24クラスのインスタンスの情報を文字列で返します。
+    public String toString(){
+        return "The color is rgb(" + this.red + "," + this.green + "," + this.blue + "). Hex: " + this.getHex() + ", binary: " + this.getBits();
+    }
+}
+
+// メインクラスです。RGB24クラスの使用例を示します。
+class Main{
+    public static void main(String[] args){
+        // RGB値で色を作成します。
+        RGB24 color1 = new RGB24(0, 153, 255);
+        // 16進数で色を作成します。rgb(255, 153, 204)
+        RGB24 color2 = new RGB24("ff99cc");
+        // 2進数で色を作成します。rgb(153, 255, 51)
+        RGB24 color3 = new RGB24("100110011111111100110011");
+        // 16進数で色を作成します。rgb(123, 123, 123)
+        RGB24 grey = new RGB24("7b7b7b");
+    }
+}
+
+RGB24 クラスの作り方
+RGB24 (int red, int green, int blue): 赤、緑、青の順で 0 から 255 までの整数を用いて新しい RGB24 オブジェクトを作成します。
+RGB24 (string hexOrBit): 24 ビットの 2 進数か、6 桁の 16 進数を表す文字列を用いて新しい RGB24 オブジェクトを作成します。
+
+RGB24 クラスの操作方法
+setColorsByHex (String hex): 16 進数 6 桁を用いて RGB24 オブジェクトの色を変更します。順に赤、緑、青を表現します。
+setColorsByBin (String bin): 24 ビット 2 進数を用いて RGB24 オブジェクトの色を変更します。順に赤、緑、青を表現します。
+setAsBlack(): RGB24 の色を黒に設定します。
+getHex(): 現在の RGB24 色の 16 進数表現を返します。
+getBits(): 現在の RGB24 色の 2 進数表現を返します。
+getColorShade(): 現在の RGB24 色が主に赤、緑、青のどれか、またはグレースケールかを判断し返します。
+toString(): 現在の RGB24 色の情報を文字列として返します。
+
+

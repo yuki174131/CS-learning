@@ -1,0 +1,255 @@
+クラスメソッドとは、一部のオブジェクト指向プログラミング言語で用いられる特殊なメソッドである。
+このタイプのメソッドは「静的メソッド」とも称され、その主な特性は、クラスの具体的なインスタンスを生成せずとも利用できるという点にある。
+
+クラスメソッドは、基本的にはそのクラスの名前空間内で定義された関数として働く。つまり、myContainer.myFunction() のように特定の名前を使用することで、同名の他の関数との衝突を避けることができる。
+
+通常のインスタンスメソッドとは異なり、静的メソッドは特定のインスタンスの状態には依存せず、
+そのため、それぞれのインスタンスが独自の this 参照を持つことはない。その代わり、静的メソッドはクラスレベルで操作を行い、インスタンス固有の情報にアクセスすることはない。
+
+トランプカードゲームのデッキを表す Deck クラスを考えてみる。
+一般的な「デッキ」を作成するのに必要な機能を提供する createDeck() はクラスメソッドとして定義することができる。
+これは全てのデッキオブジェクトに共通の操作である。つまり、特定のデッキインスタンスの状態に関係なく機能する。
+
+class Card{
+    public String rank;
+    public String suit;
+    
+    public Card(String rank, String suit){
+        this.rank = rank;
+        this.suit = suit;
+    }
+
+    public String toString(){
+        return this.rank + this.suit;
+    }
+}
+
+// カードデッキを表すクラス
+class Deck{
+    // カードのスートを表す定数
+    public static final String[] SUITS = {"♠","♡","♢","♣"};
+    // カードのランクを表す定数
+    public static final String[] RANKS = {"A","2","3","4","5","6","7","8","9","10","J","Q","K"};
+
+    // このデッキ内のカードのリスト
+    public Card[] cards;
+
+    // コンストラクタ
+    // 新しいデッキを作成し、カード配列に格納します
+    public Deck(){
+        this.cards = Deck.createDeck(); // クラスメソッドへのアクセス
+    }
+
+    // デッキを作成するクラスメソッド
+    // 各スートとランクの組み合わせを持つ52枚のカードのデッキを作成します
+    public static Card[] createDeck(){
+        int s = Deck.SUITS.length;
+        int r = Deck.RANKS.length;
+        Card[] cards = new Card[s * r];
+
+        // 各スートとランクの組み合わせで新しいカードを作成します
+        for(int i = 0; i < s; i++){
+            for(int j = 0; j < r; j++){
+                cards[i*r+j] = new Card(Deck.RANKS[j], Deck.SUITS[i]);
+            }
+        }
+
+        return cards;
+    }
+
+    // デッキをシャッフルするメソッド
+    public void shuffleDeck(){
+        int deckSize = this.cards.length;
+
+        // デッキの最後から始めて、ランダムに選んだカードとスワップします
+        for (int i = deckSize-1; i >= 0 ; i--) {
+            int j = (int) Math.floor(Math.random() * (i + 1));
+
+            // スワップするカードを保存
+            Card temp = this.cards[i];
+
+            // スワップを行います
+            this.cards[i] = this.cards[j];
+            this.cards[j] = temp;
+        }
+    }
+
+    // デッキの文字列表現を返します
+    public String toString(){
+        return Deck.cardsToString(this.cards);
+    }
+
+    // カードの配列を文字列に変換する静的メソッド
+    public static String cardsToString(Card[] inputCards){
+        String s = "";
+
+        // 各カードを文字列に変換し、結果の文字列に追加します
+        for(int i = 0; i < inputCards.length;i++){
+            s+=inputCards[i].toString();
+            // 毎5枚のカードごとに空白を追加
+            if(i%5 == 4) s+=" ";
+        } 
+
+        return s;
+    }
+}
+
+// メインクラス
+class Main{
+    // メインメソッド
+    public static void main(String[] args){
+        // 新しいデッキを作成
+        Deck d = new Deck();
+        // デッキの初期状態を表示
+        System.out.println(d);
+
+        // 新しいデッキを作成し、そのカードの配列を取得
+        Card[] myCards = Deck.createDeck();
+
+        // カード配列を表示
+        System.out.println();
+        System.out.println(Deck.cardsToString(myCards));
+        System.out.println();
+
+        // デッキをシャッフル
+        d.shuffleDeck();
+        // シャッフル後のデッキを表示
+        System.out.println(d);
+    }
+}
+
+createDeck() 関数は新しいカードデッキを生成した。
+これはオブジェクトの状態に依存せず、生成したカードの配列を返すだけの機能を持つため、
+静的で定義されている。
+これにより、特定のオブジェクトを作らずに、クラス全体から直接この関数を呼び出すことができる。
+一方で、shuffleDeck() 関数はデッキ内のカードをシャッフルするため、そのデッキ（つまりオブジェクトの状態）に依存する。
+また、shuffleDeck() をクラスメソッドとして、引数としてカードの配列を受け取り、
+それをその場で（つまり元の配列を変更して）シャッフルする shuffleDeckInPlace(cards) 
+という形で再定義することができる。
+
+このような新しいシャッフルメソッド shuffleDeckInPlace(cards) と shuffleDeckOutOfPlace(cards) を実装して
+デッキの機能を拡張し、状態を出力してみる。これらの新しいメソッドの実装に際しては、既存の shuffleDeck インスタンスメソッドを利用しても問題ない。
+
+class Card{
+    public String rank;
+    public String suit;
+    
+    public Card(String rank, String suit){
+        this.rank = rank;
+        this.suit = suit;
+    }
+
+    public String toString(){
+        return this.rank + this.suit;
+    }
+}
+
+class Deck {
+    public static final String[] SUITS = {"♠","♡","♢","♣"};
+    public static final String[] RANKS = {"A","2","3","4","5","6","7","8","9","10","J","Q","K"};
+    public Card[] cards;
+
+    public Deck() {
+        this.cards = Deck.createDeck();
+    }
+
+    public static Card[] createDeck() {
+        int s = Deck.SUITS.length;
+        int r = Deck.RANKS.length;
+        Card[] cards = new Card[s * r];
+
+        for(int i = 0; i < s; i++){
+            for(int j = 0; j < r; j++){
+                cards[i*r+j] = new Card(Deck.RANKS[j], Deck.SUITS[i]);
+            }
+        }
+
+        return cards;
+    }
+
+    // shuffleDeckInPlace
+
+    // shuffleDeckOutOfPlace
+  
+    public String toString() {
+        return cardsToString(this.cards);
+    }
+
+    public static String cardsToString(Card[] inputCards) {
+        String s = "";
+        for(int i = 0; i < inputCards.length;i++){
+            s+=inputCards[i].toString();
+            if(i%5 == 4) s+=" ";
+        } 
+        return s;
+    }
+}
+
+class Main {
+    public static void main(String[] args) {
+        Deck d = new Deck();
+        System.out.println(d);
+
+        Card[] myCards = Deck.createDeck();
+        System.out.println();
+        System.out.println(Deck.cardsToString(myCards));
+        System.out.println();
+
+        // Deck.shuffleDeckInPlace(myCards);
+        // System.out.println();
+        // System.out.println(Deck.cardsToString(myCards));
+        // System.out.println();
+
+        // Card[] myCardsCopy = Deck.shuffleDeckOutOfPlace(myCards);
+        // System.out.println();
+        // System.out.println(Deck.cardsToString(myCardsCopy));
+    }
+}
+
+ステートレスオブジェクト
+
+オブジェクト指向プログラミング言語、例えば Java では、静的メンバ変数と静的メソッドのみを持つクラスを作成する手法は、基本的に名前空間の作成を伴う。
+このようなクラスは、特定のインスタンスや状態を要求せず、幅広い適用性を持つライブラリの開発などにおいて利用される。
+全てのメンバ変数が final（変更不能）であるとき、つまり状態を持たないとき、そのオブジェクトはステートレスオブジェクト（stateless object）と称される。
+
+静的クラスや静的メソッドは、特定のオブジェクトのインスタンスに紐づけられるのではなく、クラス自体に紐づけらる。
+静的メンバ（メソッドや変数）はクラスがロードされたとき（通常は初めて参照されたとき）にメモリに一度だけ確保される。
+これは、その後生成されるそのクラスの全てのインスタンスから参照可能で、それぞれのインスタンスで個別にメモリに格納されるわけではない。
+
+例えば、クラス名が Math で、その中に静的メソッドとして sqrt があった場合、このメソッドは Math.sqrt の形でプログラムのどこからでも直接参照して使用することができる。
+そして、Math クラスを新たにインスタンス化することなく、sqrt メソッドを利用できる。
+それは Math クラス全体が、その静的メンバとともにメモリに格納されているからである。
+
+// 'MathThings'クラスを定義します。このクラスには状態を保持するインスタンスフィールドがなく、
+// すべてのメソッドが静的（static）であるため、ステートレスオブジェクトといえます。
+// つまり、MathThingsの具体的なインスタンスを作成せずとも、そのメソッドをいつでも利用できます。
+class MathThings {
+    // 'public static final'修飾子を用いて円周率の近似値を定義します。
+    // 'final'修飾子はこの値が定数であり、一度定義すると変更できないことを意味します。
+    // 'static'修飾子はこの値がクラスレベルで存在し、MathThingsクラスのどこからでもアクセス可能であることを意味します。
+    public static final double PIAPPROX = 3.14159265359;
+
+    // 円の表面積を計算する静的メソッドを定義します。
+    // このメソッドは引数として半径の値を受け取り、その半径の円の表面積を計算して返します。
+    // 'static'修飾子があるため、このメソッドはアプリケーションのライフタイム全体でどこからでもアクセスできます。
+    public static double circleSurfaceArea (int x)  {
+        return PIAPPROX * x * x;
+    }
+
+    // 箱の体積を計算する静的メソッドを定義します。
+    // このメソッドは引数として一辺の長さを受け取り、その長さの立方体の体積を計算して返します。
+    public static double boxVolume(double x){
+        return x*x*x;
+    }
+}
+
+class Main{
+    public static void main(String[] args){
+        // MathThingsクラスの静的メンバである'PIAPPROX'を出力します。
+        System.out.println(MathThings.PIAPPROX);
+
+        System.out.println(MathThings.boxVolume(2));
+        System.out.println(MathThings.circleSurfaceArea(4));
+        System.out.println(MathThings.boxVolume(5));
+    }
+}

@@ -1,0 +1,96 @@
+メンバ変数とメモリ
+
+クラスのメンバ変数は、そのクラスから作られるオブジェクトが持つで０田を定義します。
+例えば、Personというクラスを作るとき、そのメンバ変数としてnameやageを定義することができる。
+そのクラスから具体的なPersonオブジェクトを生成すつとき、そのnameやageに具体的な値がセットされる。
+
+これらのオブジェクトはメモリ上に保存される。
+具体的には、オブジェクト全体がメモリ内の特定の領域に確保され、その確保された領域の開始アドレスがオブジェクトの参照となる。
+各メンバ変数へのアクセスは、このオブジェクトの参照（ページアドレス）と書くメンバ変数の雄対的な位置（オフセット）を用いて行われる。
+
+例えば、 Personクラスにname、age、heightといったメンバ変数があるとする。
+ここでJohnというオブジェクトを生成したとき、そのオブジェクトの参照（ベースアドレス）が例えばメモリ上の1000とすると、
+name、age、heightの各メンバ変数へのアクセスは、それぞれのオフセットを元にした相対的なアドレス指定を行うことになる。
+
+オブジェクトの参照が利用可能になれば、メンバアクセス演算子を使って、
+そのオブジェクトのメンバ変数にアクセスできる。
+
+
+オブジェクト間で比較を行いたくなることがある。
+どのようにオブジェウトを比較するかは、プログラミング言語により異なる。
+例えば、等号演算子（==）を使ってオブジェクトを比較するとき、C++ ではデフォルトで構文エラーを返す。
+Java では、等号演算子（==）を使って 2 つのオブジェクトを比較すると、
+それらが同じオブジェクト（つまり、同じメモリ上の場所を参照している）であるかどうかを確認する。
+これは参照比較と呼ばれる。一方、動的言語では、オブジェクトの比較は通常、それらが等価（つまり、同じ値または状態を持つ）であるかどうかを調べるために行われる。
+これは値比較や内容比較と呼ばれる。
+
+以下Javaでの例
+class Battery{
+    public String manufacturer;
+    public String model;
+    public double voltage;
+    public double ampHours;
+    public double weightKg;
+    public double[] dimensionMm;
+
+    public Battery(String manufacturer, String model, double voltage, double ampHours, double weightKg, double wMm, double hMm, double dMm){
+        this.manufacturer = manufacturer;
+        this.model = model;
+        this.voltage = voltage;
+        this.ampHours = ampHours;
+        this.weightKg = weightKg;
+        this.dimensionMm = new double[]{wMm, hMm, dMm};
+    }
+
+    public String toString(){
+        String referenceHash = Integer.toHexString(this.hashCode());
+        return this.manufacturer + " " + this.model + ": " + this.getPowerCapacity() + "Wh (" + this.voltage + "V/" + this.ampHours + "Ah) - " + this.dimensionMm[0] + "(W)x" + this.dimensionMm[1] + "(H)x" + this.dimensionMm[2] + "(D) " + this.weightKg + "kg .... Instance Reference:" + referenceHash;
+    }
+
+    public double getPowerCapacity(){
+        return this.voltage * this.ampHours;
+    }
+}
+
+class Main {
+    public static void main(String[] args) {
+        // "VTec"メーカーの"MC96"モデルという新しいバッテリーオブジェクト(mc96)を作成します
+        Battery mc96 = new Battery("VTec", "MC96", 14.4, 6.6, 0.55, 72, 97, 51.5);
+
+        // mc96の参照をmc96Secondにコピーします。これは「シャローコピー」を意味します。つまり、mc96Secondはmc96と同じオブジェクトを指しています
+        Battery mc96Second = mc96;
+
+        // mc96と同じ値を持つ新しいバッテリーオブジェクト(mc96Third)を作成します。これは「ディープコピー」を意味します。つまり、mc96Thirdはmc96と同じ属性を持つ新しいオブジェクトです
+        Battery mc96Third = new Battery("VTec", "MC96", 14.4, 6.6, 0.55, 72, 97, 51.5);
+
+        // "Atomic Units"メーカーの"MD-LS95"モデルという新しいバッテリーオブジェクト(mdLs95)を作成します
+        Battery mdLs95 = new Battery("Atomic Units", "MD-LS95", 14.4, 6.6, 0.55, 72, 97, 51.5);
+
+        // mc96, mc96Second, mc96Third, mdLs95の各オブジェクトの情報を出力します
+        System.out.println(mc96);
+        System.out.println();
+        System.out.println(mc96Second);
+        System.out.println();
+        System.out.println(mc96Third);
+        System.out.println();
+        System.out.println(mdLs95);
+
+        System.out.println();
+
+        // mc96がmc96自身と等しいか（つまり、同じオブジェクトを参照しているか）をチェックします。結果はTrueになります
+        System.out.println(mc96 == mc96); //True
+
+        // mc96がmc96Secondと等しいか（つまり、同じオブジェクトを参照しているか）をチェックします。mc96Secondはmc96のシャローコピーなので、結果はTrueになります
+        System.out.println(mc96 == mc96Second); //True
+
+        // mc96がmc96Thirdと等しいか（つまり、同じオブジェクトを参照しているか）をチェックします。mc96Thirdはmc96のディープコピー（別のオブジェクト）なので、結果はFalseになります
+        System.out.println(mc96 == mc96Third); //False
+
+        // mc96がmdLs95と等しいか（つまり、同じオブジェクトを参照しているか）をチェックします。mdLs95は完全に別のオブジェクトなので、結果はFalseになります
+        System.out.println(mc96 == mdLs95); //False
+    }
+}
+
+クラスのインスタンスを比較する方法は、それぞれのプログラミング言語やそのクラスを設計する開発者により異なる。
+、2 つのインスタンスが同じオブジェクト参照を持つ場合？それとも、すべてのメンバ変数が同じ値（つまりディープコピーされている）場合？など。
+

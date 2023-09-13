@@ -1,0 +1,123 @@
+関連は二つの異なるクラス間の二項関係を指す。
+UML図では、関連は二つの項目をつなぐ線で表現される。
+会社の構造をオブジェクトとして表現した図を考える。
+
+https://gyazo.com/8c2eb841e04ef43e15e98c233436995d
+
+この例では、全てのオブジェクト間の関連性が可視化される。
+役員は会社を経営し、会社は子会社を所有している。
+クラスが自身に対して関連を持つ場合、（例えば、companyが自身の子会社を所有する場合）は、佐伯的関連と呼ばれる。
+
+多くの場合、関連が双方向か単方向かを指定する。双方向性とは、
+二つのクラスが互いにアクセス権を持つことを指す。
+例えば、従業員が勤務先の会社のすべてのpublic変数とメソッドにアクセスでき、
+同様に会社も従業員のすべてのpublic変数とメソッdにアクセスできる状況を指す。
+
+一方単方向性とは、一方のクラスのみが他方のクラスへアクセス権を有している関係を指します。
+例えば、以前に作成した「人が、財布を所有する」というコードでは、
+Personクラスのみがwalletのpublicヘンスやメソッドにアクセス可能であり、
+逆にwalletからPersonへのアクセスは存在しない、これが単方向性の一例である
+
+UML 図上では、単方向性は一方の端に一本の矢印だけを持つ線で表現される。
+この矢印の向きから、どのクラスがどの方向を向いているのか、すなわちどのオブジェクトがどのデータにアクセス可能なのかが理解できる。
+
+オブジェクト指向プログラミングでは、クラス間の関係はメンバ変数を介して表現されることが多い。
+このメンバ変数は、他のクラスのオブジェクトへの参照を保持する。
+
+Person クラスには wallet という名のプライベートメンバが含まれている。
+このメンバを介して、Person から Wallet オブジェクトへのアクセスが可能となる。
+ただし、Person が wallet を持っていない場合、この wallet は null になる可能性がある。
+
+- 通貨の取り扱い方は、highestFirst、dollars、twenties の 3 つあります。通貨のデフォルトタイプは highestFirst で、setDenominationPreference によって変更することができる。
+  - highestFirst: この規則では、最も額面が大きな紙幣から優先的されます。例えば、389 ドルを受け取る場合、まず 100 ドル紙幣を 3 枚、次に 50 ドル紙幣を 1 枚、20ドル紙幣を 1 枚、10 ドル紙幣を 1 枚、5 ドル紙幣を 1 枚、1 ドル紙幣を 4 枚、というようにする。
+  - dollars: この規則では、全ての金額を 1 ドル紙幣として扱う。つまり、389 ドルを受け取る場合、すべて 1 ドル紙幣、つまり 389 枚の 1 ドル紙幣を受け取る。
+  - twenties: この規則では、まず 20 ドル紙幣を使い、その後は highestFirst と同じ方法で扱う。つまり、389 ドルを受け取る場合、まず 20 ドル紙幣を 19 枚使い、残りの 9 ドルは highestFirst の規則に従って 5 ドル紙幣を 1 枚、1 ドル紙幣を 4 枚使う。
+- wallet はプライベートメンバで、内部的に隠蔽されている。ただし、ゲッターやセッターを用いてアクセス、更新、変更が可能。
+- Person コンストラクタは initialMoney を整数値として受け取り、デフォルトの通貨タイプに基づいて initialMoney を割り当てる。
+
+class Wallet{
+    public int bill1;
+    public int bill5;
+    public int bill10;
+    public int bill20;
+    public int bill50;
+    public int bill100;
+
+    public Wallet(){}
+
+    public int getTotalMoney(){
+        return (1*bill1) + (5*bill5) + (10*bill10) + (20*bill20) + (50*bill50) + (100*bill100);
+    }
+
+    public int insertBill(int bill, int amount){
+        switch(bill){
+            case(1):
+                bill1 += amount;
+                break;
+            case(5):
+                bill5 += amount;
+                break;
+            case(10):
+                bill10 += amount;
+                break;
+            case(20):
+                bill20 += amount;
+                break;
+            case(50):
+                bill50 += amount;
+                break;
+            case(100):
+                bill100 += amount;
+                break;
+            default:
+                return 0;
+        }
+
+        return bill*amount;
+    }
+}
+
+class Person{
+    public String firstName;
+    public String lastName;
+    public int age;
+    public double heightM;
+    public double weightKg;
+    public Wallet wallet;
+
+    public Person(String firstName, String lastName, int age, double heightM, double weightKg){
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.age = age;
+        this.heightM = heightM;
+        this.weightKg = weightKg;
+        this.wallet = new Wallet();
+    }
+
+    public int getCash(){
+        if(this.wallet == null) return 0;
+        return this.wallet.getTotalMoney();
+    }
+
+    public void printState(){
+        System.out.println("firstname - " + this.firstName);
+        System.out.println("lastname - " + this.lastName);
+        System.out.println("age - " + this.age);
+        System.out.println("height - " + this.heightM);
+        System.out.println("weight - " + this.weightKg);
+        System.out.println("Current Money - " + this.getCash());
+        System.out.println();
+    }
+}
+
+class Main{
+    public static void main(String[] args){
+        Person p = new Person("Ryu","Poolhopper", 40, 1.8, 140);
+        p.printState();
+
+        p.wallet.insertBill(5,3);
+        p.wallet.insertBill(100,2);
+
+        p.printState();
+    }
+}

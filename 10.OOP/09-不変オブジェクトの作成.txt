@@ -1,0 +1,125 @@
+オブジェクト指向プログラミングにおけるオブジェクトは、基本的に可変、不変のどちらかで分類される。
+不変オブジェクトは一度コンストラクタが呼び出されると、その状態は変更できない。
+
+不変オブジェクトを使用すると、一度設定されたデータは、オブジェクトがメモリから削除されるまで、その状態が変更されることはない。
+
+通常プリミティブデータ型を不変（定数）にするには、定数キーワードを使って宣言する。
+これにより、割り当てられたデータはロックされ、他のユーザーが上書きすることはできない。
+不変オブジェクトでも同じ原理が適用され、コンストラクタがメンバ変数へのデータの代入を終えると、その状態はロックされ、
+他のユーザーが上書きすることはできない。
+不変オブジェクトを実現するには、全てのメンバ変数をprivateに設定し、コンストラクタ以外には、
+publicなミューテータメソッドを待たせないことが必要。
+
+例として、RGB24 クラスを不変オブジェクトとして実装してみる。
+これにより、一度作成された RGB24 はその後変更されることなくロックされ、利用者が使えるのは状態を読み取るゲッターだけとなる。
+以下に示すのは、この原理に基づいた RGB24Immutable クラスの実装。
+このクラスは不変であり、一度作成されたインスタンスの状態は後から変更することができない。
+
+class RGB24Immutable{
+    // これらのメンバ変数はprivateなため、クラスの外部から直接変更することはできません。
+    private int red;
+    private int green;
+    private int blue;
+
+    // コンストラクタでは値の初期化を行いますが、その後は値の変更は許されません。
+    public RGB24Immutable(int red, int green, int blue){
+        this.red = red;
+        this.green = green;
+        this.blue = blue;
+    }
+
+    // このコンストラクタも、一度設定された値は変更できません。
+    public RGB24Immutable(String inputString){
+        int l = inputString.length();
+
+        if(l == 6) this.setColorsByHex(inputString);
+        else if(l == 24) this.setColorsByBin(inputString);
+        else this.setAsBlack();
+    }
+    
+    // これらのprivateメソッドは、クラスの内部で色の設定を行うためのものです。
+    // しかし、これらはコンストラクタ内からのみ呼び出され、他のメソッドからは呼び出せないため、
+    // 一度設定された色は外部から変更することができません。
+    private void setColorsByHex(String hex){
+        if(hex.length() != 6) this.setAsBlack();
+        else{
+            this.red = Integer.parseInt(hex.substring(0,2), 16);
+            this.green = Integer.parseInt(hex.substring(2,4), 16);
+            this.blue = Integer.parseInt(hex.substring(4,6), 16);
+        }
+    }
+
+    private void setColorsByBin(String bin){
+        if(bin.length() != 24) this.setAsBlack();
+        else{
+            this.red = Integer.parseInt(bin.substring(0,8), 2);
+            this.green = Integer.parseInt(bin.substring(8,16), 2);
+            this.blue = Integer.parseInt(bin.substring(16), 2);
+        }
+    }
+
+    private void setAsBlack(){
+        this.red = 0;
+        this.green = 0;
+        this.blue = 0;
+    }
+
+    // publicなゲッターメソッドはあるため、外部から値を取得することはできます。
+    // ただし、セッターメソッドは存在しないため、値を変更することはできません。
+    public String getHex(){
+        String hex = Integer.toHexString(this.red);
+        hex+=Integer.toHexString(this.green);
+        hex+=Integer.toHexString(this.blue);
+
+        return hex;
+    } 
+
+    public String getBits(){
+        return Integer.toBinaryString(Integer.parseInt(this.getHex(), 16));
+    }
+
+    public String getColorShade(){
+        if(this.red == this.green && this.green == this.blue) return "greyscale";
+        String[] stringTable = new String[]{"red","green","blue"};
+        int[] values = {this.red, this.green, this.blue};
+
+        int max = values[0];
+        int maxIndex = 0;
+        for(int i = 1; i < values.length; i++){
+            if(max <= values[i]){
+                max = values[i];
+                maxIndex = i;
+            }
+        }
+
+        return stringTable[maxIndex];
+    }
+
+    public String toString(){
+        return "The color is rgb(" + this.red + "," + this.green + "," + this.blue + "). Hex: " + this.getHex() + ", binary: " + this.getBits();
+    }
+}
+
+class Main{
+    public static void main(String[] args){
+        RGB24Immutable color1 = new RGB24Immutable(0, 153, 255);
+        //rgb(255, 153, 204)
+        RGB24Immutable color2 = new RGB24Immutable("ff99cc");
+        //rgb(153, 255, 51)
+        RGB24Immutable color3 = new RGB24Immutable("100110011111111100110011");
+        //rgb(123, 123, 123)
+        RGB24Immutable grey = new RGB24Immutable("7b7b7b");
+
+        System.out.println(grey);
+        System.out.println();
+        System.out.println(color1);
+        System.out.println();
+
+        // コンストラクタ後、RGB24Immutableの状態を変更することはできません。
+        // 以下の行はすべてエラーになります。
+        //color1.red = 200;//ERROR: 直接アクセスはprivate属性のため不可能
+        //color1.setAsBlack();//ERROR: privateメソッドなので外部から呼び出せない
+        //color1.setColorsByHex("ff99cc");//ERROR: privateメソッドなので外部から呼び出せない
+        System.out.println(color1);
+    }
+}

@@ -1,0 +1,313 @@
+以下に Battery7v というクラスを設計したケースを取り上げる。
+このクラスの設計図には、製造されたバッテリーの数を記録するクラス変数 manufacturedCount がある。
+この設計図の現在の形では、manufacturedCount 変数が完全に公開されているため、他のコードから自由に参照、変更が可能となっている。
+
+もしアプリケーションがこの manufacturedCount データに依存していた場合、
+他のコードが予期せぬ状態で変数を更新すると、アプリケーションの振る舞いが予期せぬものになり、バグを生じさせる可能性がある。
+
+たとえば、以下のように ExternalModule クラスが Battery7v の manufacturedCount を意図せず
+に変更してしまい、これが結果として予期せぬ影響を及ぼす例を示す。
+
+class Battery7v{
+    public String manufacturer;
+    public String model;
+    public static final double VOLTAGE = 7.2;
+    public static final String TYPE = "Lithium-Ion";
+    public static int manufacturedCount;
+    public double ampHours;
+    public double weightKg;
+    public double[] dimensionMm;
+
+    public Battery7v(String manufacturer, String model, double ampHours, double weightKg, double wMm, double hMm, double dMm){
+        this.manufacturer = manufacturer;
+        this.model = model;
+        this.ampHours = ampHours;
+        this.weightKg = weightKg;
+        this.dimensionMm = new double[]{wMm, hMm, dMm};
+        this.manufacturedCount+=1;
+    }
+
+    public String toString(){
+        return this.manufacturer + " " + this.model + " " + Battery7v.TYPE + " Battery: " + this.getPowerCapacity() + "Wh (" + Battery7v.VOLTAGE + "V/" + this.ampHours + "Ah) - " + this.dimensionMm[0] + "(W)x" + this.dimensionMm[1] + "(H)x" + this.dimensionMm[2] + "(D) " + this.getVolume() + " volume " + this.weightKg + "kg";
+    }
+
+    public double getPowerCapacity(){
+        return Battery7v.VOLTAGE * this.ampHours;
+    }
+
+    public double getVolume(){
+        return this.dimensionMm[0] * this.dimensionMm[1] * this.dimensionMm[2];
+    }
+}
+
+class ExternalModule{
+    // このメソッドは意図しない副作用を引き起こします。
+    // Battery7vクラスの manufacturedCountを直接変更してしまうため、Battery7vの内部状態が予期せぬ形で変化します。
+    public static void dangerousMethod(String customerId, Battery7v battery){
+        System.out.println("Processing data....internals");
+        System.out.println("Client " + customerId + " purchased a " + battery.toString());
+        
+        // 不適切に状態を変更します。これにより製造されたバッテリーの数が意図しない数値になってしまいます。
+        battery.manufacturedCount += 4234;
+    }
+
+    // これも意図しない副作用を引き起こします。
+    // 同じくBattery7v クラスの manufacturedCount を直接変更するため、プログラムの状態が不正確になる可能性があります。
+    public static void otherDangerousMethod(){
+        Battery7v.manufacturedCount += 10000;
+    }
+}
+
+class Main {
+    public static void main(String[] args) {
+        // 新たなBattery7vオブジェクトを作成します。それぞれのオブジェクトはバッテリーを表しています。
+        Battery7v zlD72 = new Battery7v("MT-Dell Tech", "ZL-D72", 9.9, 1.18, 38, 80, 70);
+        Battery7v zlD50 = new Battery7v("MT-Dell Tech", "ZL-D50", 6.6, 0.9, 28, 50, 65);
+        Battery7v zlD40 = new Battery7v("MT-Dell Tech", "ZL-D40", 5.3, 1.18, 38, 80, 70);
+
+        // ここでは、現在までに製造されたバッテリーの合計数を表示しています。
+        System.out.println("Total batteries manufactured: " + Battery7v.manufacturedCount);
+
+        System.out.println();
+        // ここでExternalModuleのメソッドを呼び出しますが、これらのメソッドはBattery7vのmanufacturedCountを不適切に変更します。
+        ExternalModule.dangerousMethod("AD515221", zlD40);
+        ExternalModule.otherDangerousMethod();
+
+        System.out.println();
+        // これらのメソッドが実行された後、製造されたバッテリーの数が突如として増加してしまいます。
+        // このように、クラスの内部状態を直接変更できると、プログラムの予期せぬ挙動を引き起こす可能性があります。
+        System.out.println("Total batteries manufactured: " + Battery7v.manufacturedCount);
+    }
+}
+
+状態間の依存関係が既に存在している場合、保守性が低下し、プログラムの複雑性が増す可能性がある。
+外部利用者がデータ構造内部にアクセスし、隠蔽した内部状態を読み取ったり、上書きしたりすることは避けたい。
+
+
+カプセル化
+
+ここで重要になるのが「カプセル化」の概念。
+カプセル化（encapsulation）は、クラスの状態と挙動をあたかもカプセル内に封じ込めるかのように隠蔽し、何を公開し、何を非公開にするかをクラス設計段階で決定する手法。
+カプセル化を通じて、実装の詳細を隠蔽し、外部からアクセスできる範囲を明確にすることができる。
+https://gyazo.com/6fe48c9ab7a67a33acb5b2d36456b821
+
+public キーワードは、任意のユーザがアクセスできるようにメンバ変数やメソッドを公開するための可視性修飾子。
+一方、private キーワードは、メンバ変数やメソッドを外部から見えないように隠蔽するための可視性修飾子で、
+これを使うことで、クラス外部からの不適切なアクセスを防止し、必要に応じてエラーを発生させることができる。
+
+次に具体的に、Personクラスを作成してみる。
+このクラスでは、すべてのメンバ変数を非公開（隠蔽）にし、一部のメソッドも同様に非公開にする。
+外部から利用可能なのは、toString() メソッドと changeName() メソッドのみとなる。
+
+import java.util.Calendar;
+
+// Personというクラスを定義します。このクラスには、人の名前、身長、体重、生年などの情報を格納します。
+class Person{
+    // 各変数はprivateと宣言されているため、Personクラスの内部からのみアクセス可能です。
+    private String firstName;
+    private String lastName;
+    private double heightM;
+    private double weightKg;
+    private int birthYear;
+
+    // Personオブジェクトを生成するためのコンストラクタ。この中でprivate変数の初期化を行います。
+    public Person(String firstName, String lastName, double heightM, double weightKg, int birthYear){
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.heightM = heightM;
+        this.weightKg = weightKg;
+        this.birthYear = birthYear;
+    }
+
+    // publicと宣言されたメソッド。toStringはオブジェクトを文字列に変換します。
+    // このメソッドを通じて内部のprivate変数の値を取得することが可能です。
+    public String toString(){
+        return this.getFullName() + ", heightM: " + this.heightM + ", weightKg: " + this.weightKg + ", age: " + this.getAge();
+    }
+
+    // 名前を変更するためのpublicメソッド。
+    // このメソッドを通じてのみfirstNameとlastNameを変更できます。
+    public void changeName(String firstName, String lastName){
+        this.firstName = firstName;
+        this.lastName = lastName;
+    }
+
+    // privateメソッド。
+    // このメソッドはクラスの外部からは呼び出せません。クラス内部からのみ使用できます。
+    private String getFullName(){
+        return this.firstName + " " + this.lastName;
+    }
+
+    // 年齢を計算して返すpublicメソッド。
+    // このメソッドを通じてbirthYearを利用し年齢を計算します。
+    public int getAge(){
+        int currentYear = Calendar.getInstance().get(Calendar.YEAR);
+        return currentYear - this.birthYear;
+    }
+}
+
+class Main{
+    public static void main(String[] args){
+        // Personオブジェクトを作成し、その参照をcarly変数に格納します。
+        Person carly = new Person("Carly", "Angelo", 1.72, 85.5, 1996);
+
+        // PersonオブジェクトのtoStringメソッドを呼び出します。これはpublicメソッドなので、オブジェクトの外部から呼び出すことが可能です。
+        System.out.println(carly);
+        
+        // getAgeもpublicメソッドなので、オブジェクトの外部から呼び出すことが可能です。
+        System.out.println(carly.getAge());
+
+        // 以下のコードはエラーを引き起こします。getFullNameメソッドとlastName変数はともにprivateなので、Personクラスの外部からアクセスすることはできません。
+        // System.out.println(carly.getFullName());
+        // carly.lastName = "Bardernson";
+
+        // 名前を変更するpublicメソッドを呼び出します。これはオブジェクトの外部から呼び出すことが可能です。
+        carly.changeName("Carly","Bardernson");
+        System.out.println(carly);
+        
+        // birthYearはprivate変数で、Personクラスの定義では、birthYearを更新するpublicメソッドが提供されていないため、この行はエラーとなります。
+        // carly.birthYear = 1976;
+    }
+}
+
+
+オブジェクト指向プログラミングの中核的な概念であるカプセル化は、データとその操作を単一の単位、つまり「クラス」に包含する技術。
+このカプセル化を適切に行うためには、定数以外のメンバ変数を一般的に private として保持します。これにより、オブジェクトの内部データを直接操作することが防がれ、データの整合性と安全性が保たれる。
+
+この制約の中で、クラスの外部から内部のメンバ変数にアクセスするための方法が提供されている。
+それがアクセサメソッド（accessor method）、すなわちゲッターメソッドです。ゲッターメソッドは、その名の通り、メンバ変数のデータを取得して返す役割を果たす。
+慣習的に、これらのメソッドの名前は "get" で始まり、その後に対象となるメンバ変数の名前が続く。
+
+一方で、メンバ変数の値を変更するためにはミューテータメソッド（mutator method）、別名セッターメソッドを使用する。
+セッターメソッドは引数を取り、これを基にメンバ変数の値を更新する。これらのメソッド名は、慣習的に "set" で始まり、その後に対象となるメンバ変数の名前が続く。
+
+使用と実装の分離
+ゲッターやセッターを使用すると、クラスの内部データ（実装）とそのデータの使用方法を分けることができる。
+これにより、クラスのユーザーはクラスの内部構造を知る必要がなく、代わりに提供されたメソッドを使用するだけでよくなる。
+これはコードの整理と保守性の向上に寄与する。
+
+追加の処理
+セッターメソッドでは、データをクラスに設定する前に、追加の操作（例えば、入力データの検証、デバッグ情報のログ出力、入力データの変換など）を行うことができる。
+これにより、データの一貫性と安全性が確保される。ゲッターメソッドでも同様のことが可能で、データを取得する際に必要な処理を行うことができる。
+
+内部実装の隠蔽と更新
+ゲッターとセッターは、内部データの詳細を隠蔽しながら、データの取得と更新を行う手段を提供する。これにより、データの詳細が変更されたとしても、それがクラスの使用に影響を与えないようにする。
+例えば、あるデータが内部的にどのように格納されているか（配列、リスト、マップなど）が変更されたとしても、それに対応するゲッターとセッターが提供するインターフェースは変わらないため、クラスを使用している他のコードを変更する必要はない。
+
+上記の理解をもとに、Person クラスのモデルをゲッターとセッターを用いてアップデートしてみる。ただし、birthYear に関しては不変な情報として扱い、更新できないようにする。これにより、人物の誕生年が後から変更されることがないように保証する。
+
+import java.util.Calendar;
+
+class Person{
+    // メンバ変数をprivateとして定義。これにより外部から直接アクセスできないようにします。
+    private String firstName;
+    private String lastName;
+    private double heightM;
+    private double weightKg;
+    private int birthYear;
+
+    // コンストラクタ。オブジェクトが生成されるときに一度だけ呼ばれます。
+    public Person(String firstName, String lastName, double heightM, double weightKg, int birthYear){
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.heightM = heightM;
+        this.weightKg = weightKg;
+        this.birthYear = birthYear;
+    }
+
+    // firstNameのゲッター。firstNameの現在の値を返します。
+    public String getFirstName(){
+        return this.firstName;
+    }
+
+    // firstNameのセッター。firstNameの値を新しい値に設定します。
+    public void setFirstName(String firstName){
+        this.firstName = firstName;
+    }
+
+    // lastNameのゲッター。lastNameの現在の値を返します。
+    public String getLastName(){
+        return this.lastName;
+    }
+
+    // lastNameのセッター。lastNameの値を新しい値に設定します。
+    public void setLastName(String lastName){
+        this.lastName = lastName;
+    }
+
+    // heightMのゲッター。heightMの現在の値を返します。
+    public double getHeightM(){
+        return this.heightM;
+    }
+
+    // heightMのセッター。heightMの値を新しい値に設定します。
+    public void setHeightM(double heightM){
+        this.heightM = heightM;
+    }
+
+    // weightKgのゲッター。weightKgの現在の値を返します。
+    public double getWeightKg(){
+        return this.weightKg;
+    }
+
+    // weightKgのセッター。weightKgの値を新しい値に設定します。
+    public void setWeightKg(double weightKg){
+        this.weightKg = weightKg;
+    }
+
+    // birthYearのゲッター。birthYearの現在の値を返します。
+    // 注意: birthYearにはセッターがありません。これはbirthYearが一度設定されたら変更しないためです。
+    public int getBirthYear(){
+        return this.birthYear;
+    }
+
+    // toStringメソッドをオーバーライドして、Personオブジェクトを文字列で表現する方法を提供します。
+    public String toString(){
+        // Personオブジェクトの完全な名前、身長、体重、年齢を文字列形式で返します。
+        return this.getFullName() + ", heightM: " + this.heightM + ", weightKg: " + this.weightKg + ", age: " + this.getAge();
+    }
+
+    // Personオブジェクトのフルネームを返すプライベートメソッド。firstNameとlastNameを組み合わせたものです。
+    private String getFullName(){
+        return this.firstName + " " + this.lastName;
+    }
+
+    // Personオブジェクトの年齢を返すメソッド。現在の年とbirthYearを使用して計算します。
+    public int getAge(){
+        int currentYear = Calendar.getInstance().get(Calendar.YEAR);
+        return currentYear - this.birthYear;
+    }
+}
+
+class Main{
+    public static void main(String[] args){
+        Person carly = new Person("Carly", "Angelo", 1.72, 85.5, 1996);
+
+        // Carlyの情報と年齢を表示
+        System.out.println(carly);
+        System.out.println(carly.getAge());
+
+        // セッターを使用して、Carlyの名前を変更
+        carly.setFirstName("Carly II");
+        carly.setLastName("Bardernson");
+
+        // 名前が変更されたCarlyの情報を表示
+        System.out.println();
+        System.out.println(carly);
+
+        // Carlyの体重、身長、生年を表示
+        System.out.println();
+        System.out.println("Weight:" + carly.getWeightKg());
+        System.out.println("Height:" + carly.getHeightM());
+        System.out.println("Birth:" + carly.getBirthYear());
+
+        // 以下の行はエラーを引き起こします。なぜなら、lastNameとbirthYearはprivateであり、
+        // 直接アクセスすることはできないからです。これらの値を読み書きするには、適切なゲッターやセッターを使用する必要があります。
+        // ERROR 
+        // carly.lastName = "Bardernson";
+        // carly.birthYear = 1976;
+        // System.out.println(carly.firstName);
+    }
+}
+
+

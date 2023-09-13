@@ -1,0 +1,645 @@
+OOP の言語は、その強力かつ重要な特性としてソフトウェアの再利用性を可能にする継承を提供する。
+継承とは、あるクラスが別のクラスの既存の定義を引用し、それを基に自己の定義を行う、クラス間の関係性を指す。
+継承を利用することで、既存のクラスの定義を再利用し、新たなクラスを作成することが可能になる。
+
+継承を用いるとデータ構造の一般化が可能となり、主に is-a 関係を満たす際に用いられる。
+その名が示す通り、継承は階層構造に従い、親から子へ属性や振る舞いが伝えられる。
+継承を実装するには、まずスーパークラスと呼ばれる一般的なクラスを定義し、そのクラスをベースにサブクラスと呼ばれるより特化したクラスを作成する。
+
+https://gyazo.com/d79e776d5b6292d7670fdba7e89ca378
+
+この例では、スーパークラスとして Animal を定義し、動物の一般的な属性と行動をこのクラスにまとめる。
+Animal クラスには、全ての動物が共有するデータが含まれる。
+
+import java.util.Date;
+import java.text.SimpleDateFormat;
+
+class BMI{
+    private double heightM;
+    private double weightKg;
+
+    // コンストラクタで身長と体重をセットします。
+    public BMI(double heightM, double weightKg){
+        this.heightM = heightM;
+        this.weightKg = weightKg;
+    }
+
+    public double getWeightKg(){
+        return this.weightKg;
+    }
+
+    public double getValue(){
+        return this.weightKg/(this.heightM*this.heightM);
+    }
+
+    public String toString(){
+        return this.heightM + " meters, " + this.weightKg + "kg, BMI:" + this.getValue();
+    }
+}
+
+class Animal{
+    private String species; // 種名
+    private BMI bmi; // BMIオブジェクト
+    private double lifeSpanDays; // 寿命（日数）
+    private String biologicalSex; // 性別
+    private Date spawnTime; // 誕生時間
+    private Date deathTime; // 死亡時間
+
+    // 新しい動物の産卵はデフォルトで100%空腹になります。
+    private int hungerPercent = 100; // 空腹度
+    private int sleepPercent = 100; // 睡眠度
+ 
+    // コンストラクタで動物の初期状態を定義します。種類、身長、体重、寿命、性別を引数に取ります。
+    public Animal(String species, double heightM, double weightKg, double lifeSpanDays, String biologicalSex){
+        this.species = species;
+        // BMIクラスのインスタンスを生成します。このように別のクラスのインスタンスをフィールドとして持つことを「コンポジション」と呼びます。
+        this.bmi = new BMI(heightM, weightKg);
+        this.lifeSpanDays = lifeSpanDays;
+        this.biologicalSex = biologicalSex;
+        this.spawnTime = new java.util.Date();
+    }
+
+    // 食事をするメソッド、食事をすると空腹度が0になります。
+    public void eat(){
+        if(!this.isAlive()) return;
+        this.hungerPercent = 0;
+    }
+
+    // 空腹状態にするメソッド、空腹度を100にします。
+    public void setAsHungry(){
+        if(!this.isAlive()) return;
+        this.hungerPercent = 100;
+    }
+
+    // 空腹かどうかを判定するメソッド、空腹度が70以上の場合に空腹と判断します。
+    public boolean isHungry(){
+        return this.hungerPercent >= 70;
+    }
+
+    // 睡眠をするメソッド、睡眠を取ると睡眠度が0になります。
+    public void sleep(){
+        if(!this.isAlive()) return;
+        this.sleepPercent = 0;
+    }
+
+    // 睡眠不足の状態にするメソッド、睡眠度を100にします。
+    public void setAsSleepy(){
+        if(!this.isAlive()) return;
+        this.sleepPercent = 100;
+    }
+
+    // 睡眠不足かどうかを判定するメソッド、睡眠度が70以上の場合に睡眠不足と判断します。
+    public boolean isSleepy(){
+        return this.sleepPercent >= 70;
+    }
+
+    // 動物を死亡させるメソッド、睡眠度と空腹度を0にし、死亡時間を現在の時刻に設定します。
+    public void die(){
+        this.sleepPercent = 0;
+        this.hungerPercent = 0;
+        this.deathTime = new java.util.Date();
+    }
+
+    // 動物が生きているかどうかを判定するメソッド、死亡時間がnullの場合に生きていると判断します。
+    // eat(), sleep(), setAsHungry(), setAsSleepy(), move()などのメソッド内で最初に呼び出されます。
+    // isAlive()がfalseを返す（つまり、動物がすでに死んでいる）場合、これらのメソッドは何も実行せずに終了します。
+    public boolean isAlive(){
+        return this.deathTime == null;
+    }
+
+    // 動物が移動するメソッド、動物が死亡していない場合にメッセージを出力します。
+    public void move(){
+        if(!this.isAlive()) return;
+        System.out.println("This animal just moved...");
+    }
+
+    // このクラスのインスタンスの情報を文字列として返すメソッド。
+    public String toString(){
+        return this.species + this.bmi + " lives " + this.lifeSpanDays + " days/" + "gender:" + this.biologicalSex + "." + this.status();
+    }
+
+    // 動物の状態を文字列として返すメソッド。
+    public String status(){
+        return this.species + " status:" + " Hunger - " + this.hungerPercent + "%, " + "sleepiness:"+this.sleepPercent + "%" + ", Alive - " + this.isAlive() + ". First created at " + this.dateCreated();
+    }
+
+    // 動物が誕生した時間を"月/日/年 時:分:秒"のフォーマットで返すメソッド
+    public String dateCreated(){
+        return new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(this.spawnTime);
+    }
+}
+
+class Main{
+    public static void main(String[] args){
+        // Animal クラスのインスタンス（具体的な動物）を生成します。この場合は「牛」です。
+        Animal cow = new Animal("Cow", 1.8,454.5,730, "female");
+        System.out.println(cow);
+
+        // 牛の動作をシミュレートします。ここでは食事、睡眠、そして死を経験させています。
+        cow.eat();
+        cow.sleep();
+        System.out.println(cow.status());
+
+        cow.setAsHungry();
+        cow.setAsSleepy();
+        cow.die();
+        System.out.println(cow.status());
+
+    }
+}
+
+このクラスを拡張し、動物の一部である「哺乳類」を具体的に表現してみる。
+この哺乳類の特性を表現する Mammal クラスを作成し、Animal クラスを拡張してみる。
+この Mammal クラスは、Animal クラスのサブクラスとなる。つまり、Animal クラスで定義したすべての状態と行動を引き継ぎ、さらに Mammal 固有の状態と行動を追加することができる。
+
+https://gyazo.com/53eafdfa9f562c81efe130cc89e31212
+
+具体的なコードを見てみる。親クラスである Animal のコンストラクタを呼び出すために、super() メソッドが使われていることに注目してみる。
+
+import java.util.Date;
+import java.text.SimpleDateFormat;
+
+// 人間や動物のBMI（Body Mass Index：肥満度を表す指数）を計算するクラスを作成します。
+class BMI{
+    private double heightM;
+    private double weightKg;
+
+    public BMI(double heightM, double weightKg){
+        this.heightM = heightM;
+        this.weightKg = weightKg;
+    }
+
+    public double getWeightKg(){
+        return this.weightKg;
+    }
+
+    public double getValue(){
+        return this.weightKg/(this.heightM*this.heightM);
+    }
+
+    public String toString(){
+        return this.heightM + " meters, " + this.weightKg + "kg, BMI:" + this.getValue();
+    }
+}
+
+// 動物クラスの実装、このクラスを継承することで具体的な動物を表現します
+class Animal{
+    // 動物の基本的な属性を保持するフィールド、protected修飾子は、このクラスと同じパッケージ内またはサブクラスからアクセス可能です。
+    // これらがprivateの場合、Mammalは継承された状態にアクセスしているため、エラーが発生します。
+    protected String species;
+    protected BMI bmi;
+    protected double lifeSpanDays;
+    protected String biologicalSex;
+    protected Date spawnTime;
+    protected Date deathTime;
+    protected int hungerPercent = 100;
+    protected int sleepPercent = 100;
+
+    public Animal(String species, double heightM, double weightKg, double lifeSpanDays, String biologicalSex){
+        this.species = species;
+        this.bmi = new BMI(heightM, weightKg);
+        this.lifeSpanDays = lifeSpanDays;
+        this.biologicalSex = biologicalSex;
+        this.spawnTime = new java.util.Date();
+    }
+
+    public void eat(){
+        if(!this.isAlive()) return;
+        this.hungerPercent = 0;
+    }
+
+    public void setAsHungry(){
+        if(!this.isAlive()) return;
+        this.hungerPercent = 100;
+    }
+
+    public boolean isHungry(){
+        return this.hungerPercent >= 70;
+    }
+
+    public void sleep(){
+        if(!this.isAlive()) return;
+        this.sleepPercent = 0;
+    }
+
+    public void setAsSleepy(){
+        if(!this.isAlive()) return;
+        this.sleepPercent = 100;
+    }
+
+    public boolean isSleepy(){
+        return this.sleepPercent >= 70;
+    }
+
+    public void die(){
+        this.sleepPercent = 0;
+        this.hungerPercent = 0;
+        this.deathTime = new java.util.Date();
+    }
+
+    public boolean isAlive(){
+        return this.deathTime == null;
+    }
+
+    public String toString(){
+        return this.species + this.bmi + " lives " + this.lifeSpanDays + " days/" + "gender:" + this.biologicalSex + "." + this.status();
+    }
+
+    public String status(){
+        return this.species + " status:" + " Hunger - " + this.hungerPercent + "%, " + "sleepiness:"+this.sleepPercent + "%" + ", Alive - " + this.isAlive() + ". First created at " + this.dateCreated();
+    }
+
+    public String dateCreated(){
+        return new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(this.spawnTime);
+    }
+}
+
+
+// このコードは、親クラスからの継承を使用して全ての状態や動作を引き継ぐ仕組みを示しています。
+// メンバ変数とメソッドの定義は全て子クラスに引き継がれます。
+// ここでは具体的に、Animalsクラスを拡張する新しいMammalsクラスを作成しています。この二つのクラス間には継承関係が存在します。
+// MammalクラスはAnimalクラスを継承しており、この関係はJavaでは"extends"キーワードによって表現されます。
+// "Mammal extends Animal"とは、MammalがAnimalを継承することを意味します。
+class Mammal extends Animal{
+    // Mammal固有の状態やフィールドを定義
+    private double furLengthCm;
+    private String furType;
+    private int toothCounter;
+    private double bodyTemperatureC;
+    private double avgBodyTemperatureC;
+    private boolean mammaryGland = false;
+    private boolean sweatGland = true;
+    private boolean isPregnant = false;
+
+    // super()は親クラスのコンストラクタを参照します。これにより、Animalクラスのメンバ変数の初期状態を適切に設定します。
+    // それに加えて、Mammal特有のデータも初期化します。これらの新しいメンバ変数はここで定義されています。
+    public Mammal(String species, double heightM, double weightKg, double lifeSpanDays, String biologicalSex, double furLengthCm, String furType, double avgBodyTemperatureC){
+
+        // スーパークラスのコンストラクタを呼び出して、Animalから継承したメンバーの初期状態を設定します。
+        super(species, heightM, weightKg, lifeSpanDays, biologicalSex);
+
+        // 他のメンバ変数の設定をします。
+        this.furLengthCm = furLengthCm;
+        this.furType = furType;
+
+        // 全てのメスの哺乳類は乳腺があります。
+        this.mammaryGland = (biologicalSex == "female");
+
+        this.avgBodyTemperatureC = avgBodyTemperatureC;
+
+        // 初期体温を平均体温Cに設定します。
+        this.bodyTemperatureC = this.avgBodyTemperatureC;
+    }
+
+    // MammalクラスにはAnimalクラスから継承したメソッドが全て含まれています。
+    // 加えて、Mammalクラス特有のメソッドも定義できます。例えば、sweat()メソッドなどです。
+    public void sweat(){
+        if(!this.isAlive()) return;
+        if(this.sweatGland) System.out.print("Sweating....");
+        // 体温の低下
+        this.bodyTemperatureC -= 0.3;
+        System.out.print("Body temperature is now " + this.bodyTemperatureC + "C");
+        System.out.println();
+    }
+
+    // 哺乳類の一般的な特徴も実装できます。例えば、母乳を出すためには妊娠していて、かつ乳腺が存在する必要があります。
+    public void produceMilk(){
+        if(!this.isAlive()) return;
+        if(this.isPregnant() && this.mammaryGland) System.out.println("Producing milk...");
+        else System.out.println("Cannot produce milk");
+        System.out.println();
+    }
+
+    // // 哺乳類は同種の他の哺乳類と交尾します。その際に、動物が雄でパートナーが雌の場合、パートナーは受精します。
+    // この動物が雌でパートナーが雄の場合、この動物は受精します。このプロセスにおいて親クラスの状態にアクセスすることに注意が必要です。
+    public void mate(Mammal mammal){
+        if(!this.isAlive()) return;
+        if(this.species != mammal.species) return;
+        if(this.biologicalSex == "female" && mammal.biologicalSex == "male") this.fertalize();
+        else if(this.biologicalSex == "male" && mammal.biologicalSex == "female") mammal.fertalize();
+    }
+
+    public void fertalize(){
+        if(!this.isAlive()) return;
+        this.isPregnant = true;
+    }
+
+    public boolean isPregnant(){
+        if(!this.isAlive()) return false;
+        return this.isPregnant;
+    }
+
+    public void bite(){
+        if(!this.isAlive()) return;
+        System.out.println(this.species + " bites with their single lower jaws which has" +  (this.toothCounter == 0 ? " not" : "")  + " replaced its teeth: " + (this.toothCounter > 0));
+        System.out.println();
+    }
+
+    // 哺乳類は一生のうちに一度しか歯を入れ替えることがないという一般的な特性を表現するreplaceTeeth()メソッドも定義しています。
+    public void replaceTeeth(){
+        if(!this.isAlive()) return;
+        if(this.toothCounter == 0) this.toothCounter++;
+    }
+
+    // 体温の上昇
+    public void increaseBodyHeat(double celcius){
+        this.bodyTemperatureC+=celcius;
+    }
+
+    // 体温の低下
+    public void decreaseBodyHeat(double celcius){
+        this.bodyTemperatureC-=celcius;
+    }
+
+    // 動物の体温を適切な体温に設定します。
+    public void adjustBodyHeat(){
+        this.bodyTemperatureC = this.avgBodyTemperatureC;
+    }
+}
+
+class Main{
+    public static void main(String[] args){
+        // 新しいMammalオブジェクト、ここでは"cow"を作成します。
+        Mammal cow = new Mammal("Cattle", 1.8,454.5,730, "female", 1.4, "Cowhide", 32.4);
+        System.out.println(cow);
+        System.out.println();
+
+        // 同じく新しいMammalオブジェクト、ここでは"bull"を作成します。
+        Mammal bull = new Mammal("Cattle", 1.8,454.5,730, "male", 1.1, "Cowhide", 30.8);
+        System.out.println(bull);
+        System.out.println();
+
+        // cowオブジェクトはMammalクラスであり、親クラスであるAnimalsのeatやsleepメソッドを使用できます。
+        cow.eat();
+        cow.sleep();
+        System.out.println(cow.status());
+
+        // 状態を変更し、最後にdieメソッドを呼び出して、cowを"死亡"状態にします。
+        cow.setAsHungry();
+        cow.setAsSleepy();
+        cow.die();
+        System.out.println(cow.status());
+        System.out.println();
+
+        // 新しいMammalオブジェクト、ここでは"tigerF"と"tigerM"を作成します。
+        Mammal tigerF = new Mammal("Tiger", 0.9,140,4745, "female", 1.1, "Tiger Hair", 38.5);
+        System.out.println(tigerF);
+        System.out.println();
+
+        Mammal tigerM = new Mammal("Tiger", 1.1,280,4045, "male", 1.2, "Tiger Hair", 38.5);
+        System.out.println(tigerM);
+        System.out.println();
+
+        // tigerMはMammalクラスのメソッドであるbiteとreplaceTeethを使用します。
+        tigerM.bite();
+        tigerM.replaceTeeth();
+        tigerM.bite();
+
+        // tigerFはMammalクラスのメソッドであるproduceMilkとmateを使用します。
+        tigerF.produceMilk();
+        tigerF.mate(tigerM);
+        tigerF.produceMilk();
+
+        // 他の哺乳類も同様に作成できます。
+        // 練習として、それぞれの哺乳類に固有の状態を表示する新しい関数mammalInformation()を作成してみましょう。
+        // 継承は非常に重要な概念なので、時間をかけて練習してください。
+    }
+}
+protected という可視性修飾子の使用に注目。
+この修飾子は、そのクラスのサブクラス以外からは、全てのメンバ変数を隠蔽する。
+すなわち、全てのサブクラスは親クラスの protected メンバ変数にアクセスすることが可能。
+
+メソッドのオーバーライド、つまり継承したメソッドの振る舞いを再定義するという技術がある。
+例えば、以下の Mammal クラスでは、既存の toString、eat、move メソッドの新しい実装を提供する。
+また、super キーワードを使わずに、継承した Animal クラスの状態を、新たなルールに従って設定することも可能。
+
+import java.util.Date;
+import java.text.SimpleDateFormat;
+
+class BMI{
+    private double heightM;
+    private double weightKg;
+
+    public BMI(double heightM, double weightKg){
+        this.heightM = heightM;
+        this.weightKg = weightKg;
+    }
+
+    public double getWeightKg(){
+        return this.weightKg;
+    }
+
+    public double getValue(){
+        return this.weightKg/(this.heightM*this.heightM);
+    }
+
+    public String toString(){
+        return this.heightM + " meters, " + this.weightKg + "kg, BMI:" + this.getValue();
+    }
+}
+
+class Animal{
+    protected String species;
+    protected BMI bmi;
+    protected double lifeSpanDays;
+    protected String biologicalSex;
+    protected Date spawnTime;
+    protected Date deathTime;
+    protected int hungerPercent = 100;
+    protected int sleepPercent = 100;
+
+    public Animal(String species, double heightM, double weightKg, double lifeSpanDays, String biologicalSex){
+        this.species = species;
+        this.bmi = new BMI(heightM, weightKg);
+        this.lifeSpanDays = lifeSpanDays;
+        this.biologicalSex = biologicalSex;
+        this.spawnTime = new java.util.Date();
+    }
+
+    public void eat(){
+        if(!this.isAlive()) return;
+        this.hungerPercent = 0;
+    }
+
+    public void setAsHungry(){
+        if(!this.isAlive()) return;
+        this.hungerPercent = 100;
+    }
+
+    public boolean isHungry(){
+        return this.hungerPercent >= 70;
+    }
+
+    public void sleep(){
+        if(!this.isAlive()) return;
+        this.sleepPercent = 0;
+    }
+
+    public void setAsSleepy(){
+        if(!this.isAlive()) return;
+        this.sleepPercent = 100;
+    }
+
+    public boolean isSleepy(){
+        return this.sleepPercent >= 70;
+    }
+
+    public void die(){
+        this.sleepPercent = 0;
+        this.hungerPercent = 0;
+        this.deathTime = new java.util.Date();
+    }
+
+    public boolean isAlive(){
+        return this.deathTime == null;
+    }
+
+    public void move(){
+        if(!this.isAlive()) return;
+        System.out.println("This animal just moved...");
+    }
+
+    public String toString(){
+        return this.species + this.bmi + " lives " + this.lifeSpanDays + " days/" + "gender:" + this.biologicalSex + "." + this.status();
+    }
+
+    public String status(){
+        return this.species + " status:" + " Hunger - " + this.hungerPercent + "%, " + "sleepiness:"+this.sleepPercent + "%" + ", Alive - " + this.isAlive() + ". First created at " + this.dateCreated();
+    }
+
+    public String dateCreated(){
+        return new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(this.spawnTime);
+    }
+}
+
+class Mammal extends Animal{
+    private double furLengthCm;
+    private String furType;
+    private int toothCounter;
+    private double bodyTemperatureC;
+    private double avgBodyTemperatureC;
+    private boolean mammaryGland = false;
+    private boolean sweatGland = true;
+    private boolean isPregnant = false;
+
+    public Mammal(String species, double heightM, double weightKg, double lifeSpanDays, String biologicalSex, double furLengthCm, String furType, double avgBodyTemperatureC){
+        super(species, heightM, weightKg, lifeSpanDays, biologicalSex);
+        this.furLengthCm = furLengthCm;
+        this.furType = furType;
+        this.mammaryGland = (biologicalSex == "female");
+        this.avgBodyTemperatureC = avgBodyTemperatureC;
+        this.bodyTemperatureC = this.avgBodyTemperatureC;
+    }
+
+    public void sweat(){
+        if(!this.isAlive()) return;
+        if(this.sweatGland) System.out.print("Sweating....");
+        this.bodyTemperatureC-=0.3;
+        System.out.print("Body temperature is now " + this.bodyTemperatureC + "C");
+        System.out.println();
+    }
+
+    public void produceMilk(){
+        if(!this.isAlive()) return;
+        if(this.isPregnant() && this.mammaryGland) System.out.println("Producing milk...");
+        else System.out.println("Cannot produce milk");
+        System.out.println();
+    }
+
+    public void mate(Mammal mammal){
+        if(!this.isAlive()) return;
+        if(this.species != mammal.species) return;
+        if(this.biologicalSex == "female" && mammal.biologicalSex == "male") this.fertalize();
+        else if(this.biologicalSex == "male" && mammal.biologicalSex == "female") mammal.fertalize();
+    }
+
+    public void fertalize(){
+        if(!this.isAlive()) return;
+        this.isPregnant = true;
+    }
+
+    public boolean isPregnant(){
+        if(!this.isAlive()) return false;
+        return this.isPregnant;
+    }
+
+    public void bite(){
+        if(!this.isAlive()) return;
+        System.out.println(this.species + " bites with their single lower jaws which has" +  (this.toothCounter == 0 ? " not" : "")  + " replaced its teeth: " + (this.toothCounter > 0));
+        System.out.println();
+    }
+
+    public void replaceTeeth(){
+        if(!this.isAlive()) return;
+        if(this.toothCounter == 0) this.toothCounter++;
+    }
+
+    public void increaseBodyHeat(double celcius){
+        this.bodyTemperatureC+=celcius;
+    }
+
+    public void decreaseBodyHeat(double celcius){
+        this.bodyTemperatureC-=celcius;
+    }
+
+    public void adjustBodyHeat(){
+        this.bodyTemperatureC = this.avgBodyTemperatureC;
+    }
+
+    // 以下のメソッドでは、親クラスAnimalのメソッドをオーバーライド（上書き）しています。
+    // オーバーライドとは、継承したメソッドの振る舞いをサブクラスで再定義することです。
+
+    // moveメソッドのオーバーライド
+    public void move(){
+        if(!this.isAlive()) return;
+        System.out.println("This mammal is moving.....");
+        System.out.println();
+    }
+
+    // toStringメソッドのオーバーライド
+    // ここでは、super.toString()を使って親クラスのメソッドを呼び出し、その結果にMammalクラス固有の情報を追加しています。
+    public String toString(){
+        return super.toString() + this.mammalInformation();
+    }
+
+    public String mammalInformation(){
+        return "This is a mammal with the following - "+"fur:"+this.furType+"/teethReplaced:"+(this.toothCounter>0)+"/Pregnant:"+this.isPregnant()+"/Body Temperature:"+this.bodyTemperatureC;
+    }
+
+    // eatメソッドのオーバーライド
+    // ここでも、super.eat()を使って親クラスのメソッドを呼び出し、その後にMammalクラス固有の行動を追加しています。
+    public void eat(){
+        super.eat();
+        this.bite();
+        System.out.println("this" + this.species + " is eating with its single lower jaw");
+    }
+}
+
+class Main{
+    public static void main(String[] args){
+        Mammal cow = new Mammal("Cattle", 1.8,454.5,730, "female", 1.4, "Cowhide", 32.4);
+        System.out.println(cow);
+        System.out.println();
+
+        Mammal bull = new Mammal("Cattle", 1.8,454.5,730, "male", 1.1, "Cowhide", 30.8);
+        System.out.println(bull);
+        System.out.println();
+
+        Animal bullAnimal = new Animal("Cattle", 1.8,454.5,730, "male");
+        System.out.println(bullAnimal);
+        System.out.println();
+
+        bull.move();
+        bullAnimal.move();
+
+        bull.eat();
+        bullAnimal.eat();
+
+        // 他の哺乳類を作成し、Mammalのメソッドを使用してください。
+        // 動物クラスを拡張して、昆虫（insect）や爬虫類（reptiles）のクラスを作成してください。
+        // Mammalsクラスを拡張して、Lionクラスを作成してください。Mammalからの全ての状態と挙動は、Lionクラスに継承されることに注意してください。これにはMammalsが継承した状態と挙動も含まれます。
+    }
+}
+
+
+

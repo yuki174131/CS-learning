@@ -1,0 +1,178 @@
+クラスのすべてのオブジェクトが同じメンバ変数を共有する必要がある場合、そのメンバ変数は通常、静的メンバ変数（またはクラス変数）として宣言されます。
+
+クラス変数はクラスの全てのインスタンスで共有されます。
+つまり、あるインスタンスでその変数を変更すると、そのクラスの他のすべてのインスタンスもその変更を見ることができる。
+これは、静的メンバ変数がメモリ内の固定された場所（静的メモリ）に存在するためです。
+
+この特性は、すべてのインスタンスが同じ値を参照したり、その値を共通に保持したりする必要がある場合に特に有用。
+
+クラス変数はその名前が示すように、特定のクラスの全てのインスタンス（つまりそのクラスのオブジェジュと）によって共有される変数。
+これは「静的」であるため、プログラムが実行されている間は常に存在し続け、その値は全てのオブジェクト間で共有される。
+それはクラス全体に関連づけられており、個々のオブジェクトではない。
+
+https://gyazo.com/feabf9090d79a67d9adcfceac2924b67
+
+クラス変数の例
+
+class Battery7v{
+    // 製造者やモデルなどのインスタンス変数
+    public String manufacturer;
+    public String model;
+    
+    // クラス変数。すべてのBattery7vオブジェクトが共有
+    public static double voltage = 7.2;
+    public static String type = "Lithium-Ion";
+    public static int manufacturedCount;
+    
+    // インスタンス変数
+    public double ampHours;
+    public double weightKg;
+    public double[] dimensionMm;
+
+    // コンストラクタ
+    public Battery7v(String manufacturer, String model, double ampHours, double weightKg, double wMm, double hMm, double dMm){
+        this.manufacturer = manufacturer;
+        this.model = model;
+        this.ampHours = ampHours;
+        this.weightKg = weightKg;
+        this.dimensionMm = new double[]{wMm, hMm, dMm};
+
+        // 製造された電池の数をカウント
+        this.manufacturedCount+=1;
+    }
+
+    // バッテリーの情報を文字列として返す
+    public String toString(){
+        return this.manufacturer + " " + this.model + " " + this.type + " Battery: " + this.getPowerCapacity() + "Wh (" + this.voltage + "V/" + this.ampHours + "Ah) - " + this.dimensionMm[0] + "(W)x" + this.dimensionMm[1] + "(H)x" + this.dimensionMm[2] + "(D) " + this.getVolume() + " volume " + this.weightKg + "kg";
+    }
+
+    public double getPowerCapacity(){
+        return this.voltage * this.ampHours;
+    }
+
+    public double getVolume(){
+        return this.dimensionMm[0] * this.dimensionMm[1] * this.dimensionMm[2];
+    }
+}
+
+class Main {
+    public static void main(String[] args) {
+        // Battery7vのインスタンスを作成
+        Battery7v zlD72 = new Battery7v("MT-Dell Tech", "ZL-D72", 9.9, 1.18, 38, 80, 70);
+        Battery7v zlD50 = new Battery7v("MT-Dell Tech", "ZL-D50", 6.6, 0.9, 28, 50, 65);
+        Battery7v zlD40 = new Battery7v("MT-Dell Tech", "ZL-D40", 5.3, 1.18, 38, 80, 70);
+
+        // 各インスタンスの情報を表示
+        System.out.println(zlD72);
+        System.out.println(zlD50);
+        System.out.println(zlD40);
+
+        System.out.println();
+        System.out.println("Accessing class member variables...");
+        // クラス変数 'manufacturedCount' を表示
+        System.out.println(Battery7v.manufacturedCount);
+        System.out.println(zlD40.manufacturedCount);
+        System.out.println();
+        
+        System.out.println("Changing the internal structure of Battery7v!");
+
+        // 新たなBattery7vのインスタンスを作成
+        Battery7v mdPL140 = new Battery7v("BowserPower", "MD-PL140", 9.9, 1.18, 89, 119, 85);
+        // クラス変数'voltage'を上書き（全てのBattery7vインスタンスに影響）
+        mdPL140.voltage = 14.4;
+        
+        // 'voltage'が更新されたことを確認
+        System.out.println(mdPL140);
+        System.out.println(zlD72.voltage);
+        System.out.println(zlD50.voltage);
+        System.out.println(zlD40.voltage);
+
+        System.out.println();
+        // 総製造数を表示
+        System.out.println("Total batteries manufactured: " + Battery7v.manufacturedCount);
+    }
+}
+
+メンバ変数はクラス内で定義され、そのクラスのメソッドやコンストラクタからアクセス可能な変数。
+メンバ変数はさらに、インスタンス変数とクラス変数に分けられる。
+
+クラス変数は、クラス全体にわたって共有される変数。これは一つのクラスに属しており、
+そのクラスのすべてのインスタンス（オブジェクト）間で共有される。
+したがって、あるオブジェクトがクラス変数を変更すると、その変更はそのクラスの他のすべてのオブジェクトに影響を及ぼす。
+クラス変数は静的（static）キーワードを使用して定義され、プログラムの実行全体の間、存在する。
+
+一方、インスタンス変数は、クラスの個々のインスタンス（オブジェクト）に固有の変数。
+これは、そのオブジェクトが持つ特定の状態や属性を表現する。
+各オブジェクトが自身のインスタンス変数のコピーを持ち、それらは他のオブジェクトとは独立している。
+したがって、あるオブジェクトがインスタンス変数を変更しても、それはそのオブジェクトにのみ影響し、
+他のオブジェクトは影響を受けない。
+
+クラス変数を使用する際には注意しなければならないことがある。
+クラス変数を更新すると、クラス内の全てのオブジェクトに影響を与えてしまう。
+先ほどの例では、電圧の状態が 14.4 に更新され、全ての Battery7v オブジェクトが 7.2v ではなく 14.4v になってしまう。
+
+これを避けるため、const キーワード（Java の場合は final キーワード）を使って、クラス変数を定数にすることができる。
+このキーワードによって、クラス変数の状態はロックされ、上書きすることができなくなる。
+コードや UML 図では、final/constant メンバ変数の変数名を ALL_CAPITAL_LETTERS のように、
+すべて大文字かつアンダースコアで指定するのが一般的。
+
+class Battery7v{
+    public String manufacturer;
+    public String model;
+    public static final double VOLTAGE = 7.2;
+    public static final String TYPE = "Lithium-Ion";
+    public static int manufacturedCount;
+    public double ampHours;
+    public double weightKg;
+    public double[] dimensionMm;
+
+    public Battery7v(String manufacturer, String model, double ampHours, double weightKg, double wMm, double hMm, double dMm){
+        this.manufacturer = manufacturer;
+        this.model = model;
+        this.ampHours = ampHours;
+        this.weightKg = weightKg;
+        this.dimensionMm = new double[]{wMm, hMm, dMm};
+
+        this.manufacturedCount+=1;
+    }
+
+    public String toString(){
+        return this.manufacturer + " " + this.model + " " + Battery7v.TYPE + " Battery: " + this.getPowerCapacity() + "Wh (" + Battery7v.VOLTAGE + "V/" + this.ampHours + "Ah) - " + this.dimensionMm[0] + "(W)x" + this.dimensionMm[1] + "(H)x" + this.dimensionMm[2] + "(D) " + this.getVolume() + " volume " + this.weightKg + "kg";
+    }
+
+    public double getPowerCapacity(){
+        return Battery7v.VOLTAGE * this.ampHours;
+    }
+
+    public double getVolume(){
+        return this.dimensionMm[0] * this.dimensionMm[1] * this.dimensionMm[2];
+    }
+}
+
+class Main {
+    public static void main(String[] args) {
+        Battery7v zlD72 = new Battery7v("MT-Dell Tech", "ZL-D72", 9.9, 1.18, 38, 80, 70);
+        Battery7v zlD50 = new Battery7v("MT-Dell Tech", "ZL-D50", 6.6, 0.9, 28, 50, 65);
+        Battery7v zlD40 = new Battery7v("MT-Dell Tech", "ZL-D40", 5.3, 1.18, 38, 80, 70);
+
+        System.out.println(zlD72);
+        System.out.println(zlD50);
+        System.out.println(zlD40);
+
+        Battery7v mdPL140 = new Battery7v("BowserPower", "MD-PL140", 9.9, 1.18, 89, 119, 85);
+
+        // コンピュータは実行できません。
+        //mdPL140.voltage = 14.4;
+
+        System.out.println();
+        System.out.println("Voltages:");
+        System.out.println(zlD72.VOLTAGE);
+        System.out.println(zlD50.VOLTAGE);
+        System.out.println(zlD40.VOLTAGE);
+        System.out.println(mdPL140.VOLTAGE);
+
+        System.out.println();
+        System.out.println("Total batteries manufactured: " + Battery7v.manufacturedCount);
+    }
+}
+
