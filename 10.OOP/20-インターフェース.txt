@@ -1,0 +1,455 @@
+インターフェース（interface）とは、オブジェクトが実装しなければならない一連の振る舞いを定義したもの。
+インターフェースには抽象メソッドのみが含まれ、それらのメソッドはインターフェースを実装するクラスで使用される。
+
+インターフェースを使用する理由は、データ型をデータ構造ではなく、オブジェクトが有する振る舞いによって宣言するため。
+ここではポリモーフィズムのルールが適用され、オブジェクトは指定されたインターフェースの形状になる。
+オブジェクトがインターフェース I のものであれば、そのオブジェクトは I によって指定されたすべての振る舞いを実装していることが保証される。。
+インターフェースは継承や構成とは異なり、密接な関係性なしに振る舞いを指定するために使用される。
+
+つまり、インターフェースはクラスが共有すべき共通の振る舞いを定義しますが、クラスが何かを共有する必要性はない。クラスが持つべきものはインターフェースで定義された振る舞いだけである。
+コンポジションは通常、has-a の関係（人は BMI と名前を持つ）を持ち、継承は is-a の関係（キツネは哺乳類で、哺乳類は動物である）を持つが、
+インターフェースは契約ベースの関係（ヘリコプターと鷲は Fly を実装するため、飛ばなければならない）を持つ。
+契約とは、オブジェクトが特定のインターフェースとみなされるために何をしなければならないかを意味する。
+
+クラスがインターフェースを実装する場合、そのクラスはインターフェースに指定されたすべての関数の実際の実装を書く必要がある。インターフェースは抽象メソッドのみを含むことができます。
+例として、Audible というインターフェースを定義する。Audible は音を発生する任意のオブジェクトを指す。
+
+Audible を実装する任意のオブジェクトは、以下の振る舞いを持つ必要があります：
+makeNoise(): 何らかの音を発生させる
+soundFrequency(): このオブジェクトが生成する平均音周波数を返す
+
+// インターフェースは、Interfaceキーワードを使用して定義されます。
+interface Audible{
+    // インターフェース内には、実装クラスでオーバーライドされるべき抽象メソッドが含まれます。
+    // Audibleを実装したクラスは必ずmakeNoise()とsoundFrequency()とsoundLevel()を持つべきです。
+
+    // オブジェクトが生成する音を示すメソッド
+    public abstract void makeNoise();
+
+    // オブジェクトが生成する音の平均周波数を返すメソッド
+    public abstract double soundFrequency();
+
+    // オブジェクトが生成する音のレベル(デシベル)を返すメソッド
+    public abstract double soundLevel();
+}
+
+// Person, Horse, Cow, Truck, ViolinはそれぞれAudibleインターフェースを実装します。
+// クラスは、インターフェースを実装するためにimplementsキーワードを使用します。
+
+// 例えば、PersonクラスではmakeNoise、soundFrequency、soundLevelメソッドが実装されています。
+class Person implements Audible{
+    private String firstName;
+    private String lastName;
+    private double heightM;
+    private double weightKg;
+    private int age;
+
+    public Person(String firstName, String lastName, double heightM, double weightKg, int age){
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.heightM = heightM;
+        this.weightKg = weightKg;
+        this.age = age;
+    }
+
+    public String getFullName(){
+        return this.firstName + " " + this.lastName;
+    }
+
+    public String toString(){
+        return this.getFullName() + " who is " + this.heightM + "m tall and weights " + this.weightKg + "kg.";
+    }
+
+    // 人が音を立てるときの動作を定義
+    public void makeNoise(){
+        System.out.println("Hello World!");
+    }
+
+    // 人が出す音の周波数を定義。16歳以上とそれ以下で周波数が異なると想定
+    public double soundFrequency(){
+        return this.age > 16 ? 110 : 130;
+    }
+
+    // 人が出す音のレベルを定義。16歳以上とそれ以下でレベルが異なると想定
+    public double soundLevel(){
+        return this.age > 16 ? 60 : 65;
+    }
+}
+
+// Horse, Cow, Truck, Violinクラスも同様にAudibleインターフェースを実装しています。
+// 各クラスに適したmakeNoise、soundFrequency、soundLevelメソッドが定義されています。
+class Horse implements Audible{
+    private double weightKg;
+    private double soundFrequency = 120;
+    private double soundDecibels = 75;
+
+    public Horse(double weightKg){
+        this.weightKg = weightKg;
+    }
+
+    public String toString(){
+        return "This is a horse that weights: " + this.weightKg + "kg";
+    }
+
+    public void makeNoise(){
+        System.out.println("Neeighh!!");
+    }
+
+    public double soundFrequency(){
+        return this.soundFrequency;
+    }
+
+    public double soundLevel(){
+        return this.soundDecibels;
+    }
+}
+
+class Cow implements Audible{
+    private double weightKg;
+    private double soundFrequency = 90;
+    private double soundDecibels = 70;
+
+    public Cow(double weightKg){
+        this.weightKg = weightKg;
+    }
+
+    public String toString(){
+        return "This is a cow that weights: " + this.weightKg + "kg";
+    }
+
+    public void makeNoise(){
+        System.out.println("Moooo!!");
+    }
+
+    public double soundFrequency(){
+        return this.soundFrequency;
+    }
+
+    public double soundLevel(){
+        return this.soundDecibels;
+    }
+}
+
+class Truck implements Audible{
+    private double weightKg;
+
+    public Truck(double weightKg){
+        this.weightKg = weightKg;
+    }
+
+    public String toString(){
+        return "This is a truck that weights: " + this.weightKg + "kg";
+    }
+
+    public void makeNoise(){
+        System.out.println("Beep Beep!!");
+    }
+
+    public double soundFrequency(){
+        return 165;
+    }
+
+    public double soundLevel(){
+        return 120;
+    }
+}
+
+class Violin implements Audible{
+    private double soundFrequency = 659.3;
+    private final static double SOUND_DECIBELS = 95;
+
+    public String toString(){
+        return "This is a violin that plays music: ";
+    }
+
+    public void makeNoise(){
+        System.out.println("Beep Beep!!");
+    }
+
+    public double soundFrequency(){
+        return this.soundFrequency;
+    }
+
+    public double soundLevel(){
+        return Violin.SOUND_DECIBELS;
+    }
+}
+
+class Main{
+    // Audibleインターフェースを使用してポリモーフィズムを実現します。この関数は、Audibleを実装している任意のクラスを取り扱えます。
+    public static void personInteractsWithObject(Person p, Audible noiseObject){
+        System.out.println(p + " will interact with " + noiseObject + " and cause it to make a noise");
+        noiseObject.makeNoise();
+        System.out.println("The noise was made at " + noiseObject.soundFrequency() + "Hz at a level of " + noiseObject.soundLevel() + "dB");
+        System.out.println();
+    }
+
+    public static void main(String[] args){
+        // オブジェクトの作成
+        Person ashley = new Person("Ashley", "William", 1.8, 110, 29);
+
+        // インターフェースを型として使用することで、ポリモーフィズムを利用できます。
+        // Audible型として宣言したオブジェクトはAudibleインターフェースで定義されたメソッドのみ使用できます。
+        Audible obj1 = new Person("Toshi", "Takemura", 1.7, 105, 41);
+        Audible obj2 = new Horse(450);
+        Cow obj3 = new Cow(1300);
+        Audible obj4 = new Truck(3230.5);
+        Violin obj5 = new Violin();
+
+        // 以下では、ashleyがそれぞれのAudibleオブジェクトと対話します。
+        personInteractsWithObject(ashley, obj1);
+        personInteractsWithObject(ashley, obj2);
+        personInteractsWithObject(ashley, obj3);
+        personInteractsWithObject(ashley, obj4);
+        personInteractsWithObject(ashley, obj5);
+
+        // 特定のメソッド（ここではgetFullName）を呼び出すためには、そのインスタンス（ここではobj1）が適切なクラス（ここではPerson）のインスタンスであることを確認する必要があります。
+        if(obj1 instanceof Person) System.out.println("Specific task..." + ((Person) obj1).getFullName());
+    }
+}
+
+インターフェースを使用することで、異なるクラス間で共通のメソッド（この場合は音を出す振る舞い）を保証することができる。
+また、インターフェースを型として使用することで、異なるクラスのオブジェクトを一貫した方法で扱うことができる。
+これは、ポリモーフィズムというオブジェクト指向プログラミングの重要な原則を示している。
+
+Audible を実装できるクラスとは、基本的に音を出力可能などのような任意のオブジェクトである。
+例えば、人、犬、牛、車、飛行機、ラジオ、ギターなどが挙げられる。これらのオブジェクト間に共通点はありませんが、それがまさにポイント。
+
+クラス A がインターフェース I を実装するとき、クラスは契約を結び、A はインターフェースで指定された振る舞いを実装しなければならない。
+この契約により、A は I に変形する能力を得る。つまり、I 型と宣言された変数や関数は A の具体的なインスタンスを使用することができる。
+
+
+インターフェースについての重要な点
+- インターフェースは振る舞いだけを指定し、状態を指定することはできない。
+- インターフェースによって指定された振る舞いは抽象メソッドである。これらはインターフェースを実装するクラスが定義して実装しなければならない関数名として扱う。インターフェースは抽象メソッドだけから構成される。
+- インターフェースには抽象メソッドのみが許可されているため、抽象クラスとは大きく異なりる。抽象クラスでは、状態を指定したり、一部のメソッドを実装したり、一部のメソッドを抽象化したりすることができる。
+- クラスが実装できるインターフェースの数に制限はない。つまり、Car は Audible, Drivable, Vehicle, Product などのインターフェースを実装することができる。
+
+多くの OOP 言語では、継承を一つのクラスに限定している。一つのクラスは一つの親からしか継承できない。
+インターフェースは、オブジェクトがどのような振る舞い（x、y、z）をするべきかをコンパイラに伝える役割を果たす。
+その際、インターフェース自体が動作の詳細を具体的に指定するのではなく、それらの動作が存在することを保証するための契約。なので、振る舞いの詳細な手順を検査する必要はない。
+
+もし一つのオブジェクトが複数のインターフェースを実装しており、その中で少なくとも 2 つのインターフェースが同じ動作 x を要求していたとしても、これは問題にはならない。
+むしろ、そのオブジェクトは振る舞い x を実装していることで、それらのインターフェースからの要求を同時に満たしているということになる。
+
+// Audibleという名前のインターフェースを定義します。
+// 音を出すオブジェクトが持つべきメソッドを定義します。
+interface Audible{
+    public abstract void makeNoise();
+    public abstract double soundFrequency();
+    public abstract double soundLevel();
+}
+
+// Edibleという名前のインターフェースを定義します。
+// 食べられるオブジェクトが持つべきメソッドを定義します。
+interface Edible{
+    public abstract String howToPrepare();
+    public abstract double calories();
+}
+
+// PersonクラスはAudibleインターフェースを実装します。
+// そのため、makeNoise(), soundFrequency(), soundLevel()というメソッドを持つ必要があります。
+class Person implements Audible{
+    private String firstName;
+    private String lastName;
+    private double heightM;
+    private double weightKg;
+    private int age;
+
+    public Person(String firstName, String lastName, double heightM, double weightKg, int age){
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.heightM = heightM;
+        this.weightKg = weightKg;
+        this.age = age;
+    }
+
+    public String getFullName(){
+        return this.firstName + " " + this.lastName;
+    }
+
+    public String toString(){
+        return this.getFullName() + " who is " + this.heightM + "m tall and weights " + this.weightKg + "kg.";
+    }
+
+    // Personが音を出すメソッドを定義します。
+    // このメソッドはAudibleインターフェースによって要求されています。
+    public void makeNoise(){
+        System.out.println("Hello World!");
+    }
+
+    // Personの音の周波数を返すメソッドを定義します。
+    // このメソッドはAudibleインターフェースによって要求されています。
+    public double soundFrequency(){
+        return this.age > 16 ? 110 : 130;
+    }
+
+    // Personの音のレベルを返すメソッドを定義します。
+    // このメソッドはAudibleインターフェースによって要求されています。
+    public double soundLevel(){
+        return this.age > 16 ? 60 : 65;
+    }
+}
+
+// HorseクラスもAudibleインターフェースを実装します。
+// Personクラスと同様に、makeNoise(), soundFrequency(), soundLevel()というメソッドを持つ必要があります。
+class Horse implements Audible{
+    private double weightKg;
+    private double soundFrequency = 120;
+    private double soundDecibels = 75;
+
+    public Horse(double weightKg){
+        this.weightKg = weightKg;
+    } 
+
+    public String toString(){
+        return "This is a horse that weights: " + this.weightKg + "kg";
+    }
+
+    // Horseが音を出すメソッドを定義します。
+    // このメソッドはAudibleインターフェースによって要求されています。
+    public void makeNoise(){
+        System.out.println("Neeighh!!");
+    }
+
+    // Horseの音の周波数を返すメソッドを定義します。
+    // このメソッドはAudibleインターフェースによって要求されています。
+    public double soundFrequency(){
+        return this.soundFrequency;
+    }
+
+    // Horseの音のレベルを返すメソッドを定義します。
+    // このメソッドはAudibleインターフェースによって要求されています。
+    public double soundLevel(){
+        return this.soundDecibels;
+    }
+}
+
+// CowクラスはAudibleとEdibleの両方のインターフェースを実装します。
+// そのため、makeNoise(), soundFrequency(), soundLevel()というメソッドと、howToPrepare(), calories()というメソッドを持つ必要があります。
+class Cow implements Audible, Edible{
+    private double weightKg;
+    private double soundFrequency = 90;
+    private double soundDecibels = 70;
+
+    public Cow(double weightKg){
+        this.weightKg = weightKg;
+    } 
+
+    public String toString(){
+        return "This is a cow that weights: " + this.weightKg + "kg";
+    }
+
+    // Cowが音を出すメソッドを定義します。
+    // このメソッドはAudibleインターフェースによって要求されています。
+    public void makeNoise(){
+        System.out.println("Moooo!!");
+    }
+
+    // Cowの音の周波数を返すメソッドを定義します。
+    // このメソッドはAudibleインターフェースによって要求されています。
+    public double soundFrequency(){
+        return this.soundFrequency;
+    }
+
+    // Cowの音のレベルを返すメソッドを定義します。
+    // このメソッドはAudibleインターフェースによって要求されています。
+    public double soundLevel(){
+        return this.soundDecibels;
+    }
+
+    // Cowの調理方法を返すメソッドを定義します。
+    // このメソッドはEdibleインターフェースによって要求されています。
+    public String howToPrepare(){
+        return "Cut the cow with a butchering knife into even pieces, and grill each piece at 220C";
+    }
+
+    // Cowのカロリーを返すメソッドを定義します。
+    // このメソッドはEdibleインターフェースによって要求されています。
+    public double calories(){
+        return this.weightKg * 1850;
+    }
+}
+
+// 以下もAudibleインターフェースを実装したクラスの例です。
+class Truck implements Audible{
+    private double weightKg;
+
+    public Truck(double weightKg){
+        this.weightKg = weightKg;
+    } 
+
+    public String toString(){
+        return "This is a truck that weights: " + this.weightKg + "kg";
+    }
+
+    public void makeNoise(){
+        System.out.println("Beep Beep!!");
+    }
+
+    public double soundFrequency(){
+        return 165;
+    }
+
+    public double soundLevel(){
+        return 120;
+    }
+}
+
+class Violin implements Audible{
+    private double soundFrequency = 659.3;
+    private final static double SOUND_DECIBELS = 95;
+
+    public String toString(){
+        return "This is a violin that plays music: ";
+    }
+
+    public void makeNoise(){
+        System.out.println("Beep Beep!!");
+    }
+
+    public double soundFrequency(){
+        return this.soundFrequency;
+    }
+
+    public double soundLevel(){
+        return Violin.SOUND_DECIBELS;
+    }
+}
+
+// Mainクラスでは、PersonクラスのインスタンスがAudibleやEdibleのインスタンスとどのように相互作用するかを定義します。
+class Main{
+    // PersonがAudibleオブジェクトとやりとりする例を示します。
+    public static void personInteractsWithObject(Person p, Audible noiseObject){
+        System.out.println(p + " will interact with " + noiseObject + " and cause it to make a noise");
+        noiseObject.makeNoise();
+        System.out.println("The noise was made at " + noiseObject.soundFrequency() + "Hz at a level of " + noiseObject.soundLevel() + "dB");
+        System.out.println();
+    }
+
+    // PersonがEdibleオブジェクトを食べる例を示します。
+    public static void personEatsEdible(Person p, Edible rawFood){
+        System.out.println(p + " will prepare and eat :" + rawFood + ". They do the following:" + rawFood.howToPrepare());
+        System.out.println("The person prepared and ate the meal. " + rawFood.calories() + " calories consumed.");
+        System.out.println();
+    }
+
+    public static void main(String[] args){
+        Person ashley = new Person("Ashley", "William", 1.8, 110, 29);
+
+        Person obj1 = new Person("Toshi", "Takemura", 1.7, 105, 41);
+        Horse obj2 = new Horse(450);
+        Cow obj3 = new Cow(1300);
+        Truck obj4 = new Truck(3230.5);
+        Violin obj5 = new Violin();
+
+        // Ashleyが他のAudibleオブジェクトとやりとりします。
+        personInteractsWithObject(ashley, obj1);
+        personInteractsWithObject(ashley, obj2);
+        personInteractsWithObject(ashley, obj3);
+        // CowはAudibleインターフェースとEdibleインターフェースの両方を実装しています。
+        // そのため、AshleyはCowとやりとりし、またCowを食べることも可能です。
+        personEatsEdible(ashley, obj3);
+    }
+}
+

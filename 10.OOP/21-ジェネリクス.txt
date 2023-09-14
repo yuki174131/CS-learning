@@ -1,0 +1,440 @@
+ジェネリクス
+
+異なるデータ型をサポートしたい場合、そのデータ型専用のクラスを作成する。
+これは、同じコードをコピー・ペーストすることを意味しますが、データ型だけを変更する。
+例えば、IntegerLinkedList は整数要素のみをサポートします。ダブル型をサポートしたい場合、DoubleLinkedList クラスを作成し、IntegerLinkedList から完全に同じコードをコピー・ペーストするが、
+データ宣言を整数からダブルに変更する。IntegerLinkedLists.push(Integer i) は、同じコードを持ちつつ、DoubleLinkedLists.add(Double d) に変更される
+
+コンパイラは非常に厳密で、push(Integer i) が整数のみを受け入れ、文字型や double 型を渡すと、コンパイル時エラーが発生する。この厳格さはセキュリティの観点から必要。
+しかし、オブジェクト指向プログラミング（OOP）は、概念の抽象化とコードの再利用性も重視する。私たちは、コードの再利用性を持つために、リスト構造をあらゆる種類のオブジェクトのコンテナとして使いたい。
+ここで、問題を明確に示すために、単純な StackInteger クラスと StackDouble クラスを見てみる。
+
+import java.lang.StringBuilder;
+
+// 整数を保持するためのノードクラス
+class IntegerNode{
+    Integer data;
+    IntegerNode next;
+
+    public IntegerNode(Integer data){
+        this.data = data;
+    }
+}
+
+// IntegerNodeを扱うスタッククラス
+class IntegerStack{
+    IntegerNode head;
+
+    // スタックに新しい要素を追加します
+    public void push(Integer data){
+        IntegerNode temp = this.head;
+        this.head = new IntegerNode(data);
+        this.head.next = temp;
+    }
+
+    // スタックの先頭の要素を取り出し、その要素をスタックから削除します
+    public Integer pop(){
+        if(this.head == null) return null;
+
+        IntegerNode temp = this.head;
+        this.head = this.head.next;
+        return temp.data;
+    }
+
+    // スタックの先頭の要素を取り出しますが、削除はしません
+    public Integer peek(){
+        if(this.head == null) return null;
+        return this.head.data;
+    }
+
+    // スタックの内容を文字列として出力します
+    public String toString(){
+        if(this.head == null) return "null";
+
+        // StringBuilderを使用して、O(n)で追加します。
+        StringBuilder str = new StringBuilder("|" + this.head.data + "|");
+
+        IntegerNode iterator = this.head.next;
+
+        while(iterator != null && iterator.next != null){
+            str.append(iterator.data + ",");
+            iterator = iterator.next;
+        }
+        
+        str.append(iterator.data);
+        return  str.toString() + "]";
+    }
+}
+
+// double型を保持するためのノードクラス
+class DoubleNode{
+    Double data;
+    DoubleNode next;
+
+    public DoubleNode(Double data){
+        this.data = data;
+    }
+}
+
+// DoubleNodeを扱うスタッククラス
+// このクラスは、IntegerStackとほぼ同じ処理を行いますが、保持するデータ型が異なるだけです
+// これはDRY（Don't Repeat Yourself）の原則に反しています
+class DoubleStack{
+    DoubleNode head;
+
+    // スタックに新しい要素を追加します
+    public void push(Double data){
+        DoubleNode temp = this.head;
+        this.head = new DoubleNode(data);
+        this.head.next = temp;
+    }
+
+    // スタックの先頭の要素を取り出し、その要素をスタックから削除します
+    public Double pop(){
+        if(this.head == null) return null;
+
+        DoubleNode temp = this.head;
+        this.head = this.head.next;
+        return temp.data;
+    }
+
+    // スタックの先頭の要素を取り出しますが、削除はしません
+    public Double peek(){
+        if(this.head == null) return null;
+        return this.head.data;
+    }
+
+    // スタックの内容を文字列として出力します
+    public String toString(){
+        if(this.head == null) return "null";
+
+        // StringBuilderを使用して、O(n)で追加します。
+        StringBuilder str = new StringBuilder("|" + this.head.data + "|");
+
+        DoubleNode iterator = this.head.next;
+
+        while(iterator != null && iterator.next != null){
+            str.append(iterator.data + ",");
+            iterator = iterator.next;
+        }
+        
+        str.append(iterator.data);
+        return  str.toString() + "]";
+    }
+}
+
+class Main{
+    public static void main(String[] args){
+        // IntegerStackのテスト
+        IntegerStack stackInt = new IntegerStack();
+        System.out.println(stackInt);
+        stackInt.push(3);
+        stackInt.push(23);
+        stackInt.push(425);
+        stackInt.push(94);
+        stackInt.push(2);
+        stackInt.push(14);
+        System.out.println(stackInt);
+        stackInt.pop();
+        stackInt.pop();
+        stackInt.push(45);
+        System.out.println(stackInt);
+
+        // DoubleStackのテスト
+        DoubleStack stackDouble = new DoubleStack();
+        System.out.println(stackDouble);
+        stackDouble.push(3.123);
+        stackDouble.push(23.5984);
+        stackDouble.push(42.515);
+        stackDouble.push(9.5154);
+        stackDouble.push(2.9941356);
+        stackDouble.push(0.00414);
+        System.out.println(stackDouble);
+        stackDouble.pop();
+        stackDouble.pop();
+        stackDouble.push(45.0);
+        System.out.println(stackDouble);
+    }
+}
+
+解決策の一つとして、Java の汎用な Object クラスを使用する方法がある。
+Java は純粋なオブジェクト指向プログラミング言語であり、すべてのオブジェクトは実際には Object クラスから継承されている。
+以下は実際のコード
+
+import java.lang.StringBuilder;
+
+// Nodeクラスは任意のオブジェクトをデータとして保持します
+class Node{
+    Object data;
+    Node next;
+
+    // オブジェクトをデータとして持つノードを作成します
+    public Node(Object data){
+        this.data = data;
+    }
+}
+
+// 汎用なスタッククラス
+class Stack{
+    Node head;
+
+    // スタックに新しい要素を追加します
+    public void push(Object data){
+        Node temp = this.head;
+        this.head = new Node(data);
+        this.head.next = temp;
+    }
+
+    // スタックの先頭の要素を取り出し、その要素をスタックから削除します
+    public Object pop(){
+        if(this.head == null) return null;
+
+        Node temp = this.head;
+        this.head = this.head.next;
+        return temp.data;
+    }
+
+    // スタックの先頭の要素を取り出しますが、削除はしません
+    public Object peek(){
+        if(this.head == null) return null;
+        return this.head.data;
+    }
+
+    // スタックの内容を文字列として出力します
+    public String toString(){
+        if(this.head == null) return "null";
+        StringBuilder str = new StringBuilder("|" + this.head.data + "|");
+
+        Node iterator = this.head.next;
+        while(iterator != null && iterator.next != null){
+            str.append(iterator.data + ",");
+            iterator = iterator.next;
+        }
+        
+        str.append(iterator.data);
+        return  str.toString() + "]";
+    }
+}
+
+class Main{
+    public static void main(String[] args){
+        // IntegerStackとして使用
+        Stack stackInt = new Stack();
+        System.out.println(stackInt);
+        stackInt.push(3);
+        stackInt.push(23);
+        stackInt.push(425);
+        stackInt.push(94);
+        stackInt.push(2);
+        stackInt.push(14);
+        System.out.println(stackInt);
+        stackInt.pop();
+        stackInt.pop();
+        stackInt.push(45);
+        System.out.println(stackInt);
+
+        // DoubleStackとして使用
+        Stack stackDouble = new Stack();
+        System.out.println(stackDouble);
+        stackDouble.push(3.123);
+        stackDouble.push(23.5984);
+        stackDouble.push(42.515);
+        stackDouble.push(9.5154);
+        stackDouble.push(2.9941356);
+        stackDouble.push(0.00414);
+        System.out.println(stackDouble);
+        stackDouble.pop();
+        stackDouble.pop();
+        stackDouble.push(45.0);
+        System.out.println(stackDouble);
+    }
+}
+
+しかし、このアプローチには問題がある。スタックは同一のデータ型から成る均一なリストであるべきで、
+異なるデータ型を混在させてしまうと、論理エラーや実行時エラーを引き起こす可能性がある。
+
+例えば、String、Double、Animal、Integerなど、すべてのオブジェクトがObjectクラスから継承されているため、これらはすべて有効なスタックの入力となる。
+しかし、これらのデータ型が混在すると、実行時エラーが発生する可能性が高く、具体的なオブジェクトとしてではなく、抽象的なオブジェクトとしてしかこれらを使用できない。
+例えば、数字だけを保存していても、そのオブジェクトの二つを掛け合わせたり割ったりしようとするとエラーが発生する。
+
+import java.lang.StringBuilder;
+
+class Node{
+    Object data;
+    Node next;
+
+    public Node(Object data){
+        this.data = data;
+    }
+}
+
+class Stack{
+    Node head;
+
+    public void push(Object data){
+        Node temp = this.head;
+        this.head = new Node(data);
+        this.head.next = temp;
+    }
+
+    public Object pop(){
+        if(this.head == null) return null;
+
+        Node temp = this.head;
+        this.head = this.head.next;
+        return temp.data;
+    }
+
+    public Object peek(){
+        if(this.head == null) return null;
+        return this.head.data;
+    }
+
+    public String toString(){
+        if(this.head == null) return "null";
+
+        StringBuilder str = new StringBuilder("|" + this.head.data + "|");
+
+        Node iterator = this.head.next;
+
+        while(iterator != null && iterator.next != null){
+            str.append(iterator.data + ",");
+            iterator = iterator.next;
+        }
+        
+        str.append(iterator.data);
+        return  str.toString() + "]";
+    }
+}
+
+class Main{
+    public static void main(String[] args){
+        Stack stack = new Stack();
+        System.out.println(stack);
+        stack.push(3);
+        stack.push(23);
+        stack.push(425);
+        stack.push(3.123);
+        stack.push(23.5984);
+        stack.push(42.515);
+        stack.push(9.5154);
+        stack.push(14);
+        System.out.println(stack);
+
+        // エラー：基本的な掛け算ができません。IntegerとDoubleは掛け算可能であるにも関わらず。
+        // System.out.println(stack.pop() * stack.pop());
+    }
+}
+
+ここでジェネリクス（generics）の出番。ジェネリクスは、クラスが変数や入力として一般的なデータ型を宣言することを可能にする。
+そして、特定のクラスの下でオブジェクトがインスタンス化されるとき、コンパイル時の構文チェックがエラーを検出するために実行される。
+
+これが意味することは、コンテナとして機能するような構造（例えば、スタック）を作成する場合、まずデータ入力と状態をジェネリクスとして定義できるということ。
+スタックがインスタンス化されるとき、特定のクラスが宣言され、コンパイル時の構文チェックが行われる。
+これにより、単一の汎用なスタック構造を定義するだけで、
+Integer 用の Stack<Integer>、Character 用の Stack<Character>、Double 用の Stack<Double>、または Animal 用の Stack<Animal> を持つことができる。
+
+もしスタックのインスタンス C が Integer として宣言された場合、C が Integer だけで動作することを確認するために、コンパイル時のチェックが実行される。
+もし C.add(4.5) が実行された場合、エラーが発生する。なぜなら C のジェネリック型は Integer に設定されており、4.5 は Doubleだからである。
+
+それでは、このジェネリクスの概念を使用して、Stack クラスを再定義する。リストは均質になり、通常の特定のクラスのように扱うことができる。
+もし Integer ならば、数学演算子を適用できますし、もし Animal ならば、いずれも eats() メソッドを呼び出すことができる。
+
+import java.lang.StringBuilder;
+
+// ジェネリック型をEとして定義します。
+class Node<E>{
+    E data;
+    Node<E> next;
+
+    public Node(E data){
+        // このノードが持つデータを設定します。データ型はEです。
+        this.data = data;
+    }
+}
+
+// Stackクラスもジェネリック型Eを使用します。
+// これにより、任意の型のオブジェクトをスタックに格納できます。
+// この場合、プレースホルダはEであり、このクラスをインスタンス化する際にEが何を意味するかを宣言することができます。
+// コンパイル時には、Eはインスタンス化時に宣言された指定されたクラスに置き換えられます。
+class StackGeneric<E>{
+    Node<E> head;
+
+    // pushメソッドでは、ジェネリック型Eのデータを引数に取ります。
+    // Eは、インスタンスが行われると特定のタイプに置き換えられます。
+    // これにより、任意の型のデータをスタックにプッシュできます。
+    public void push(E data){
+        // Nodeにもジェネリック型を使用します。クラス名で宣言したEプレースホルダを使用します。
+        Node<E> temp = this.head;
+        this.head = new Node<E>(data);
+        this.head.next = temp;
+    }
+
+    public E pop(){
+        if(this.head == null) return null;
+
+        Node<E> temp = this.head;
+        this.head = this.head.next;
+        // ポップしたノードのデータを返します。このデータの型はEです。
+        return temp.data;
+    }
+
+    public E peek(){
+        if(this.head == null) return null;
+        // スタックのトップのデータを返します。このデータの型はEです。
+        return this.head.data;
+    }
+
+    public String toString(){
+        if(this.head == null) return "null";
+        StringBuilder str = new StringBuilder("|" + this.head.data + "|");
+
+        Node<E> iterator = this.head.next;
+        while(iterator != null && iterator.next != null){
+            str.append(iterator.data + ",");
+            iterator = iterator.next;
+        }
+        
+        str.append(iterator.data);
+        return  str.toString() + "]";
+    }
+}
+
+class Main{
+    public static void main(String[] args){
+        // Integerのスタックを作成します。
+        // ここで、ジェネリック型EはIntegerになります。
+        StackGeneric<Integer> stack = new StackGeneric<Integer>();
+        System.out.println(stack);
+        stack.push(3);
+        stack.push(23);
+        stack.push(425);
+        stack.push(2456);
+        stack.push(14);
+        stack.push(455);
+        System.out.println(stack);
+
+        // 2つの整数をポップし、それらを掛け合わせます。結果はIntegerです。
+        System.out.println(stack.pop() * stack.pop());
+        System.out.println(stack);
+
+        // Doubleのスタックを作成します。
+        // ここで、ジェネリック型EはDoubleになります。
+        StackGeneric<Double> stackDouble = new StackGeneric<Double>();
+        System.out.println(stackDouble);
+        stackDouble.push(3.123);
+        stackDouble.push(23.5984);
+        stackDouble.push(42.515);
+        stackDouble.push(9.5154);
+        stackDouble.push(2.9941356);
+        stackDouble.push(1.00414);
+        System.out.println(stackDouble);
+        
+        // 2つのDoubleをポップし、それらを掛け合わせます。結果はDoubleです。
+        System.out.println(stackDouble.pop() * stackDouble.pop());
+        System.out.println(stackDouble);
+    }
+}
+
+。
+
