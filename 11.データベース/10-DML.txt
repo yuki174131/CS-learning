@@ -1,0 +1,211 @@
+DML は、データベースにおいての CRUD（Create・Read・Update・Delete）処理を行うために使用される。具体的には、
+- SELECT 文（データの検索・抽出）
+- INSERT 文（データの追加）
+- UPDATE 文（データの更新）
+- DELETE 文（データの削除）
+
+等が該当する。テーブルに保存されているデータを操作したい場合は DML を使用する。
+
+SELECT
+SELECT 句は、出力する項目を指定することができる文法。
+
+SELECT table_name.column_name, table_name.column_name FROM table_name;
+※カラムは複数指定できる。
+
+SELECT food_name, carbohydrates, protein, fat, (protein * 4 + fat * 9 + carbohydrates * 4) AS total_calories FROM foods
+→total_caloriesのようにカラムの値を利用した計算式の出力も可能。
+
+FROM
+FROM 句は、入力になるテーブルを指定することができる文法。
+SELECT と組み合わせれば、入力と出力をコントロールすることができる。例えば、「FROM で指定した入力テーブルに存在するカラムの内、表示したいカラムを SELECT で指定する」といった使い方ができる。
+
+全カラムを出力する場合は、カラムを指定する代わりに * を使用することができる。
+その場合は SELECT products.* FROM products; のように記述することができる
+
+WHERE
+WHERE 句は、入力テーブルから条件に合うレコードのみを抽出することができる文法。
+SELECT, FROM と組み合わせれば、入力テーブルから条件に合うレコードのみを出力することができる。
+
+例えば、products テーブルの id カラムが 1 のレコードを出力したい場合は、以下のように記述する。
+SELECT products.* FROM products WHERE products.id = 1;
+
+この時の内部での処理は、以下のように行われている。
+- 一行目のレコードを見て、WHERE 句を評価する。つまり、products.id = 1 を評価する。
+- WHERE 句の評価が true であればその行は出力され、false であればその行は出力されない。
+- 一行目のレコードの評価が完了したので、二行目のレコードへと移る。
+- 上記を繰り返します。
+
+このように全てのレコードを評価していき、最終的に出力対象になっているレコードをテーブル形式で表示する。
+評価するレコード数が多くなれば内部の処理にかかるコストが大きくなっていくことが予測される。このコスト増加を抑えるためにインデックスが使用される。
+
+SELECT や WHERE 内でカラムを指定する場合は、table_name.column_name という形で記述していたが、実はテーブル名を省略することができる。
+つまり、上記のクエリは SELECT * FROM products WHERE id = 1; のように記述することも可能、
+一つのクエリで複数の入力テーブルを取る場合がある。その場合は、SELECT や WHERE 内で指定されているカラムがどの入力テーブルのカラムなのかがわからなくなるため、
+table_name.column_name という形でテーブル名を明示する必要がある。
+
+
+比較演算子
+
+二つの式や値の比較を行い、結果を真偽値（true または false）で返す演算子を比較演算子という。
+式や値を評価する比較演算子には以下が存在する。これらは出力として、真偽値を返す。
+- =（等しい）
+- <>（等しくない）
+- >（より大きい）
+- >=（以上）
+- <（より小さい）
+- <=（以下）
+
+論理演算子
+
+真偽値に対して演算を行い、結果として真偽値を返す演算子を論理演算子という。比較演算子などを使用して出力された真偽値を用いて、演算を行う。これらも出力として、真偽値を返す。
+- NOT（否定）
+- AND（論理積）
+- OR（論理和）
+
+WHERE 句では、比較演算子や論理演算子の他に以下の特別な条件を指定できる。
+- IN（列挙してる値のいずれかを含む）
+- BETWEEN（数値が～以上～以下である）
+- LIKE（指定された文字列を含む）
+- IS NULL（NULL 値である）
+- IS NOT NULL（NULL 値でない）
+
+NULL と一緒に比較演算子を使用することはできず、IS NULL や IS NOT NULL を使って比較する。SQL では、NULL 値は他の値（NULL を含む）との比較で true になることはない。
+NULL を含めた比較演算は全て NULL を返す。そして、MySQL では 0 や NULL は false を意味するため、最終的な出力は Empty Set になり、意味のある出力を得られることはない。
+
+
+IN
+
+IN 句は、列挙している値のいずれかを含む場合、true を返し、それ以外の場合、false を返す。
+SELECT * FROM products WHERE price IN (100000, 200000);
+→products テーブルの内、値段が 100,000 円か 200,000 円のレコード。
+
+SELECT * FROM products WHERE price NOT IN (100000, 200000);
+→products テーブルの内、値段が 100,000 円でも 200,000 円でもないレコード。
+
+
+BETWEEN
+
+BETWEEN 句は、指定された二つの値の間に入っている場合、true を返し、それ以外の場合、false を返す。
+
+SELECT * FROM products WHERE price BETWEEN 100000 AND 200000;
+→products テーブルの内、値段が 100,000 円以上、200,000 円以下のレコード。
+※以下も同様の結果となる。
+SELECT * FROM products WHERE price >= 100000 AND price <= 200000;
+
+
+LIKE
+
+LIKE 句は、指定された文字列が含まれている場合、true を返し、それ以外の場合、false を返す。LIKE を使用するとき、ワイルドカード（%）と呼ばれるものを一緒に使用する。
+ワイルドカードとは、任意の文字列を指定するための特殊な文字記号のこと。
+
+SQL のワイルドカード（%）は、0 文字以上の任意の文字列を指定することができます。これを LIKE と組み合わせることで、部分一致を表現することができる。
+例えば、LIKE "pro%" のように記述すれば、「最初は pro で始まり、それ以降はどのような文字列を含んでも良い」という検索の仕方が可能。
+この時、文字列検索なので、ダブルクオテーション（""）で囲む必要がある。
+
+
+・前方一致
+指定された文字列で始まる文字列に一致する場合、true を返し、それ以外の場合、false を返す。
+
+SELECT * FROM products WHERE name LIKE "ゾニー%";
+→名前がゾニーから始まる商品を検索したい場合。
+
+
+・後方一致
+指定された文字列で終わる文字列に一致する場合、true を返し、それ以外の場合、false を返す。
+
+SELECT * FROM products WHERE name LIKE "%テレビ";
+→名前がテレビで終わる商品を検索したい場合。
+
+
+・部分一致
+指定された文字列が、全体の文字列のどこかに一致する場合、true を返し、それ以外の場合、false を返す。
+この時、指定された文字列は、全体の文字列の中のどこに含まれていても構わない。
+
+SELECT * FROM products WHERE name LIKE "%じば%";
+→名前にじばを含む商品を検索したい場合。
+
+
+・中間一致
+指定された文字列が、全体の文字列の内側のどこかに一致する場合、true を返し、それ以外の場合、false を返す。
+部分一致と似ていますが、全体の文字列の内側で一致していなければいけないところが異なる。つまり、先頭や後尾で一致しているものは検索にヒットしない。
+
+SELECT * FROM products WHERE name LIKE "_%じば%_";
+→じばという単語が文字列の内側にある文字列がヒット。
+
+
+IS NULL
+
+NULL は比較演算子で比較することができない。カラムの値が NULL のレコードを検索する場合は、IS NULL を使用する。
+
+SELECT * FROM products WHERE price IS NULL;
+→price が NULL のレコードを検索したい場合。
+
+
+IS NOT NULL
+
+カラムの値が NULL でないレコードを検索する場合は、IS NOT NULL を使用する。
+
+SELECT * FROM products WHERE price IS NOT NULL;
+→price が NULL でないレコードを検索した場合。
+
+
+ORDER
+
+ORDER 句は、データの表示順を指定することがでる。
+
+昇順（上から下へ大きくなっていく順番）の場合は、ORDER BY column_name ASC と指定できる。降順（上から下へ小さくなっていく順番）の場合は、ORDER BY column_name DESC と指定できる。
+
+SELECT * FROM products ORDER BY price ASC;
+→products テーブルの price カラムで昇順ソートしたい場合。
+
+昇順の場合、NULL は一番最初に表示される。降順の場合は最後に表示される。ORDER 句はデフォルトで昇順となるため、SELECT * FROM products ORDER BY price; のように書くこともできる。
+ソートカラムとして、複数のカラムを同時に指定することができる。その場合、先に書いてあるカラムで優先的にソートされ、それが同じだった場合に、後ろのカラムでソートされていく。
+
+SELECT * FROM users ORDER BY age ASC, created_at DESC;
+→users テーブルの age で昇順ソート、 created_at で降順ソート
+
+
+LIMIT
+
+LIMIT 句は、表示するレコード数を指定することができる。例えば、3 つのレコードだけを表示したい場合は、LIMIT 3 と指定できる。
+この時取り出されるデータは、ORDER 句によって決められた順番の上から順になっている。
+
+SELECT * FROM users ORDER BY age ASC LIMIT 3;
+→users テーブルの年齢が若い順に 3 レコード取り出す。
+
+SELECT カラム名 FROM テーブル名 LIMIT 取得件数 OFFSET 開始位置;
+SELECT カラム名 FROM テーブル名 LIMIT 開始位置,取得件数;
+→開始位置を指定できる。
+
+
+データの作成(INSERT)
+
+データの作成は、INSERT を使って行う。
+
+INSERT INTO table_name (column_name1, column_name2, ...) VALUES (value1, value2, ...);
+→INSERTコマンド例
+
+
+データの更新と削除(UPDATE/DELETE)
+
+データの更新には、UPDATE を使用する。
+
+UPDATE table_name SET column_name=value WHERE clause;
+→updateコマンド例
+※もし WHERE を記述しなければ、テーブルに存在するすべてのレコードを指定された値で更新される。特定のレコードだけを更新したい場合は、WHERE でレコードを絞り込む必要がある。
+
+
+DELETE
+
+データの削除には、DELETE を使用。
+
+DELETE FROM table_name WHERE clause;
+→DELETEコマンド例
+
+もし WHERE を記述しなければ、テーブルに存在するすべてのレコードが削除される。特定のレコードだけを削除したい場合は、WHERE でレコードを絞り込む必要がある。
+
+テーブルの全データを削除する場合、DELETE FROM table_name; 以外に、DDL である TRUNCATE TABLE table_name; を使用することもできる。TRUNCATEと比較し以下のような違いがあります。
+- DELETE は一行ずつデータを削除していくため、データ数が増えると TRUNCATE よりも削除に時間がかかる。
+- TRUNCATE でデータを削除した場合、AUTO_INCREMENT 値はその開始値にリセットされますが、DELETE で削除した場合は削除前の状態から続けて採番される。
+
+

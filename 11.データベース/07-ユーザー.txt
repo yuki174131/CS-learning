@@ -1,0 +1,34 @@
+データベース内で使用するユーザーを別で作成し、ログインする。それぞれのユーザーは個別に割り当てられた権限の範囲内でデータベースを操作することができる。
+root ユーザーは、すべての権限を持ち、どのようなことも可能なスーパーユーザーアカウント。
+また、root アカウントの初期パスワードは空です。そのため、誰でもパスワードなしで root として MySQL Server に接続することができる。
+root ユーザーに関しては、以下のリンクを参照。
+https://dev.mysql.com/doc/refman/8.0/ja/default-privileges.html
+
+SQL は、大文字・小文字を区別しない。しかし、SQL ステートメントを大文字で記述するのが一般的。
+
+SQL ステートメントとは、これから学習していく CREATE hogehoge や SELECT fugafuga FROM piyopiyo などの SQL 文法のこと。
+また、SQL 文の終わりには必ず ;（セミコロン）を挿入しなければならない点に注意。
+
+SELECT user, host FROM mysql.user;
+→DBユーザーの一覧をみることができる。
+
+CREATE USER user_name@host_name IDENTIFIED BY 'password'
+→ユーザー作成コマンド例
+
+SET PASSWORD FOR user_name@host_name = 'new_password';
+→ユーザーのパスワード変更コマンド
+
+RENAME USER 'test_user'@'localhost' TO 'test_user2'@'127.0.0.1';
+→ユーザー名、ホスト名変更コマンド
+
+localhost と 127.0.0.1 は、あらかじめ用意されている特別なホスト名、IP アドレス。
+ホスト名とは、ネットワーク上でのコンピュータの名前のこと。コンピュータに名前を付けることで、特定のコンピュータを指定することができる。
+
+mysql -u test_user2 -h 127.0.0.1 -p
+→ログインコマンド
+-h は、ホスト名を指定するオプション。ホスト名が localhost の場合は、ログイン時にホスト名を省略することができる。
+今までは、root も test_user もホスト名が localhost だったため、省略することができました。test_user2 は、ホスト名を変更したため、明示的に指定する。
+
+DROP USER test_user2@127.0.0.1;
+→ユーザー削除コマンド
+

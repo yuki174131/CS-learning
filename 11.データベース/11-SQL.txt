@@ -1,0 +1,243 @@
+集計関数
+
+値の集まりに対して計算を実行し、1 つの値を返す DBMS 組み込みの関数。MySQL には、以下のような集計関数がある
+- MAX(column_name)	値の集まりの中で最大値を返す
+- MIN(column_name)	値の集まりの中で最小値を返す
+- AVG(column_name)	値の集まりの平均値を返す
+- SUM(column_name)	値の集まりの合計値を返す
+- COUNT(column_name or *)	値の集まりの個数を返す
+
+※Count(*) を除いて NULL 値は無視される。
+
+SELECT MAX(age) FROM users;
+→MAX or MIN使用時の例
+
+SELECT AVG(age) FROM users;
+→AVG使用例
+
+SELECT SUM(age) FROM users;
+→SUM使用例
+
+SELECT COUNT(*) FROM users;
+→COUNT使用例
+- COUNT(*): 全行数を取得
+- COUNT(column_name): column_name の値が NULL ではない行数を取得
+
+SELECT column_name AS display_name FROM table_name;
+→表示カラム名はASを使用して指定する。
+
+SELECT prefecture AS 都道府県, AVG(age) AS 平均年齢 FROM users WHERE prefecture = '東京都';
+→東京都の平均年齢を出力する時の例
+
+※バックエンドサーバとは、一般的には、データベースと通信してデータの処理を行うサーバを指す。
+データベースと通信する際に、正しい名前でバックエンドサーバへデータを受け渡すことは重要。
+
+
+GROUP BY
+
+各レコードをグループ化し、各グループごとに集計関数を実行するには、GROUP BY を使用する。
+
+SELECT prefecture AS 都道府県, AVG(age) AS 平均年齢 FROM users GROUP BY prefecture;
+→各都道府県ごとの平均年齢を取得したい場合
+
+WHERE 句と組み合わせて使うこともできる
+
+SELECT prefecture AS 都道府県, AVG(age) AS 平均年齢 FROM users WHERE prefecture IN ('大阪府', '東京都') GROUP BY prefecture;
+→大阪と東京の平均年齢を取得
+
+各句は、この順番でないとエラーになる。上記のクエリは、以下の順序で処理が行われている。
+
+- WHERE 句で、大阪府、東京都のレコードだけに絞り込む。
+- 残ったレコードを、都道府県ごとにグループ化する。
+- 各グループで、年齢の平均値を取得する。
+- SELECT 句で各グループのレコードをまとめて表示する。
+
+GROUP BY句では、複数のカラムを指定してグループ化することもできる。
+
+SELECT address , age FROM teachers GROUP BY address ,age ;
+
+SELECT句で指定するカラム名がGROUP BY句と異なっていると、意図したグループ化ができない。
+
+
+HAVING
+
+HAVING は、GROUP BY でグループ化した後のそれぞれの仮想テーブルに対して、絞り込みを実行する。
+
+SELECT prefecture AS 都道府県, AVG(age) AS 平均年齢 FROM users WHERE prefecture IN ('大阪府', '東京都') GROUP BY prefecture HAVING AVG(age) <= 20;
+→平均年齢が 20 歳以下の都道府県のみを取得するといったことが可能になる
+
+WHERE の時点では、テーブルはまだグループ化されていない。従って、この時点で集計関数を使った AVG(age) <= 20 のような絞り込みを行うことはできない。
+このように、グループ化された後の各仮想テーブルに対して絞り込みを行いたい場合に使用するのが、HAVING 句。
+HAVING 句を使えば、AVG の処理を実施した後に、絞り込みを実施することができる。
+
+
+CASE
+
+CASEはWHENと合わせて使用し、条件分岐を行なうために用る。他のプログラム言語でいうif, elseと同様の役割があり、データごとに指定した条件に合致するかどうかを判定する。
+CASE式は条件に応じて出力結果を変えられる。
+
+SELECT
+  pr.*,
+  CASE WHEN unit_cost < 500 THEN 'low'
+       WHEN unit_cost < 1000 THEN 'middle'
+       ELSE 'high'
+  END AS lank
+FROM product AS pr
+
+
+例
+アパレルの店舗では日々仕入れを行なっており、それを仕入れ管理システムで管理している。
+warehouse テーブルには仕入れデータが入っている。冬の 12 - 3 月のデータを対象に以下を計算する。
+商品 ID、倉庫 ID、年、月ごとの仕入れ数(all_count) を取得する。出力カラムは、商品 ID(product_id)、倉庫 ID(warehouse_id)、仕入れ年月(stock_year_month), 仕入れ数(all_count)。
+stock_year_month(降), warehouse_id(昇), product_id(昇)の順にする。
+stock_year_month 文字列には、SQLite の連結演算子「||」と CASE 条件式を使用。
+https://gyazo.com/1ebb4ab6c4b2c82f04974cecfa7dfda5
+
+SELECT
+    product_id,
+    warehouse_id,
+    CASE WHEN month in (10, 11, 12) THEN year || '-' || month
+        ELSE year || '-0' || month
+    END AS stock_year_month,
+    COUNT(id)
+FROM
+    warehouse
+WHERE
+    month IN (12, 1, 2, 3)
+GROUP BY
+    product_id,
+    warehouse_id,
+    year,
+    month
+ORDER BY
+    year DESC,
+    month DESC,
+    warehouse_id,
+    product_id;
+
+
+UNION
+
+UNION は、複数の SELECT ステートメントからの結果を 1 つの結果セットに結合するために使用される。UNION によって得られる結果のイメージは以下となる。
+https://gyazo.com/1780b79c2638853726cbad5c0d4fb8cc
+
+SELECT column_name FROM table_name UNION SELECT column_name FROM table_name (UNION ...);
+→複数のSELECTステートメントの結果を一つに結合できる。
+
+3 つ以上の SELECT ステートメントを繋ぐこともできます。最初の SELECT ステートメントからのカラム名が、返される結果のカラム名として使用される。
+
+SELECT '平均値' 集計種別, AVG(age) 集計結果 FROM users
+UNION
+SELECT '最大値' 集計種別, MAX(age) 集計結果 FROM users
+UNION
+SELECT '最小値' 集計種別, MIN(age) 集計結果 FROM users;
+→3つの集計結果を1テーブルで出力できる。
+
+
+UNION ALL
+
+UNION ALL の役割は、ほとんど UNION と同じ。複数の SELECT ステートメントからの結果を 1 つの結果セットに結合するために使用される。
+異なる点としては、UNION ALL は出力結果に重複があってもそのまま出力するのに対し、先ほど学習した UNION は出力結果に重複があった場合に重複を削ぎ落として出力する。
+
+SELECT age FROM users WHERE age >= 20
+UNION
+SELECT age FROM users WHERE age < 20
+→重複するageは出力されない。
+
+SELECT age FROM users WHERE age >= 20
+UNION ALL
+SELECT age FROM users WHERE age < 20
+→全てのレコードのageが出力される。
+
+異なるテーブルのカラム名等を集約させたい場合の例
+SELECT
+    username,
+    email,
+    customer_first_name AS first_name,
+    customer_last_name AS last_name,
+    created_at,
+    'customers' AS type
+FROM
+    customers
+UNION
+SELECT
+    username,
+    email,
+    employee_first_name AS first_name,
+    employee_last_name AS last_name,
+    created_at,
+    'employees' AS type
+FROM
+    employees
+UNION
+SELECT
+    NULL AS username,
+    email,
+    first_name,
+    last_name,
+    created_at,
+    'leads' AS type
+FROM
+    leads
+ORDER BY
+    created_at DESC;
+
+
+テーブルの結合
+
+結合は、複数の集合（テーブル）に関係を持たせ、新しい要素の集合を作るために使用する。つまり、結合とは、複数のテーブルに関係を持たせて一つのテーブルとして出力することを意味する。
+結合は、主テーブル（駆動表（外部表）とも呼ばれる）と、結合先テーブル（内部表とも呼ばれる）で行われる。
+
+SELECT column_name FROM table1 JOIN table2 ON table1.id = table2.table1_id;
+
+この SQL で言えば、駆動表は table1 で、内部表は table2となる。
+ON 句には結合条件を記述します。この SQL で言えば、table1 の id カラムの値と、table2 の table1_id カラムの値が等しいレコードを結合する。
+
+
+MySQL で結合時に採用されているアルゴリズムに、nested loop join というアルゴリズムがあり、以下の手順で結合が行われる。
+
+- 駆動表のレコードを 1 行取り出す。
+- 取り出したレコードと結合可能なレコードを内部表から検索する。
+- 結合の処理速度のボトルネックになるのが、2 の処理。もし内部表の結合条件に使用しているカラムにインデックスが貼られていない場合、内部表をフルスキャンする必要がある。
+　これは、内部表のデータ量が多くなると致命的になる。結合カラムにはインデックスを貼ることが推奨される。
+※フルスキャンとは、テーブルの全レコードを検索することを指す。
+https://gyazo.com/419490788d262e4ba0e63a2d067c0992
+
+SELECT books.id AS 本ID, books.name AS 本タイトル, CONCAT(authors.family_name, ' ', authors.first_name) AS 著者名 FROM books JOIN authors ON authors.id = books.author_id;
+→books テーブルを駆動表に、authors テーブルを内部表にして結合し、本 ID、本のタイトル、著者名を出力
+
+SELECT b.id AS 本ID, b.name AS 本タイトル, CONCAT(a.family_name, ' ', a.first_name) AS 著者名 FROM books AS b JOIN authors AS a ON a.id = b.author_id
+→テーブル名もカラム名と同様に AS を使ってエイリアスを付けることができる
+テーブル名のエイリアスは、最初の一文字で表すことが多い。
+
+SELECT b.id 本ID, b.name 本タイトル, CONCAT(a.family_name, ' ', a.first_name) 著者名 FROM books b JOIN authors a ON a.id = b.author_id;
+→AS は省略することができる。
+
+
+結合は、以下のようにさまざまな種類がある。
+
+- 内部結合
+- 外部結合
+  - 左外部結合
+  - 右外部結合
+  - 完全外部結合
+- クロス結合
+
+
+内部結合
+
+結合の中でも、内部表から結合先のレコードが見つかった駆動表のレコードのみを出力テーブルに表示する結合方法を、内部結合（inner join）と言う。
+https://gyazo.com/be2a95d5593dd43b88512fd1ca843d59
+
+SELECT a.id 著者ID, CONCAT(a.family_name, ' ', a.first_name) 著者名, b.id 本ID, b.name 本タイトル, b.author_id books_著者ID FROM authors a INNER JOIN books b ON b.author_id = a.id;
+
+ポイントとして、
+内部結合では結合先がない駆動表のレコードは、出力テーブルから消える。
+内部結合を含む全ての結合は、結合先が複数存在する場合、駆動表のレコードは分裂して、内部表のレコードを結合する、
+
+
+結合先が見つからなかった駆動表のレコードは消えてしまうというのは内部結合独特の動きである。
+
+
+
+

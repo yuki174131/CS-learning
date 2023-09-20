@@ -1,0 +1,172 @@
+データベースができたら、次はテーブルを作成する。テーブルには、カラムと呼ばれる「テーブルが持つ項目」がある。
+MySQL の場合、以下のようなデータ型からカラムに割り当てる型を選ぶことになる。
+- INT: 4 バイトの数値
+- BIGINT: 8 バイトの数値
+- FLOAT: 浮動小数点ありの数値
+- DATE: 日付
+- DATETIME:	日時
+- CHAR(n):	固定長文字列（足りない分は空白で埋められる）
+- VARCHAR(n):	変長文字列
+- TEXT:	変長文字列
+
+n には文字数が入る。
+VARCHAR 型と TEXT 型はどちらも文字列を格納することのできるデータ型。TEXT 型は 65535 文字まで格納可能なため、データ量の大きな文字列を格納したい場合は TEXT 型を使用する。
+しかし、TEXT 型はデータベースにデータが直接格納される訳ではなく、ポインタのみが格納され、データ自体は別領域に格納される。
+そのため、データをCRUD（Create, Read, Update, Delete）する際の効率を考えると、別領域にアクセスする必要のない VARCHAR 型の方が良いと言える。
+ここは、ユースケースに合わせてより適切な方を選択して行く必要がある。
+ポインタとは、データが保存されているメモリアドレスを指す変数、またはメモリアドレスそのものを指す。
+
+CREATE TABLE db_name.table_name (column_name data_type, column_name data_type, ...);
+→テーブル作成コマンド
+
+CREATE TABLE table_name (column_name data_type, column_name data_type, ...);
+→DB選択済みの際のテーブル作成コマンド
+
+VARCHAR(n) の n は、このデータ型を宣言したカラムに入る最大文字数（1 文字 1 バイト）。
+データ容量を効率よく消費できるように 255 文字を宣言することが多い。
+MySQL の公式に以下のような記述がある。
+
+「CHAR とは対照的に、VARCHAR 値は、1 バイトまたは 2 バイト長のプリフィクスの付いたデータとして格納される。
+長さプリフィクスは、値に含まれるバイト数を示します。255 バイト以下の値を格納するカラムでは 1 バイト長のプリフィクスを使用し、
+255 バイトよりも大きい値を格納するカラムでは 2 バイト長のプリフィクスを使用する」
+
+つまり、256 文字以上を格納できるようにすると、より多くのデータ容量を消費する。
+
+
+スキーマ
+
+データベースを作成する前には、必ずデータベース設計というものを行う。
+データベース設計では、スキーマ（schema）と呼ばれるデータベースのデータ構造やデータの持ち方が大事になってくる。
+スキーマは、以下の 3 層に分類することができる。
+- 外部スキーマ：データベースのビューや、アプリケーションのユーザーインターフェース
+- 概念スキーマ：開発者から見たデータベースで、データ構造や関係について
+- 内部スキーマ： DBMS から見たデータベースで、データを格納しているファイルなど具体的な格納方法など
+
+上記3つのスキーマのうち、カラムやデータ型、またこれから学習するインデックスや制約など、
+テーブルについての様々な定義は、概念スキーマに分類される。
+
+
+インデックスと制約
+
+テーブルに設定できる項目には、カラムの他にインデックス（index）や制約（constraint）と呼ばれるものがある。
+
+インデックス
+
+インデックスは特定のカラム値のある行をすばやく見つけるために使用される。
+インデックスがないと、MySQL は該当する行を見つけるために、先頭行から始めてテーブル全体を走査する必要がある。テーブルが大きいほど、このコストが大きくなる。
+テーブルの特定のカラムにインデックスが設定されており、そのカラムでレコードを走査する場合、MySQL は全てのレコードを調べる必要なく、素早く特定できる。
+これは全ての行を順次読み取るよりはるかに高速。
+
+これは内部的に B ツリーと呼ばれる、データ走査に強い木構造を用いることで、データの特定を素早く実行している。
+特定のカラムに対してインデックスを設定すると、そのカラムでレコードを特定する場合のコストを非常に小さくできる。
+
+インデックスの設定は、以下のうちどちらかで行う。
+ALTER TABLE table_name ADD INDEX index_name (column_name);
+CREATE INDEX index_name ON table_name(column_name);
+
+SHOW INDEX FROM departments;
+→インデックスの確認コマンド
+
+
+制約
+
+制約には、以下のようなものが存在します。
+- 主キー（PRIMARY KEY）制約
+- 外部キー（FOREIGN KEY）制約
+- NOT NULL 制約
+- 一意（UNIQUENESS）制約
+- CHECK 制約
+
+主キー（PRIMARY KEY）制約
+- 一意を保証
+- NULL を禁止
+- 1 つのテーブルにおいて 1 つのカラムにだけ主キー制約を設定できる
+- 主キー制約を設定するカラムにはインデックスが必要。手動でも設定できますが、自動で設定される。
+
+SHOW COLUMNS FROM members;
+→カラムの確認コマンド
+
+外部キー（FOREIGN KEY）制約
+- 他のテーブルの主キーを参照する。
+- この制約を設定したカラム（外部キー）の値は、必ず主キーに設定したカラムに存在する値でなければならない。
+- この制約を設定したカラムの値を先に削除しなければ、参照先の主キーのデータを削除することはできない。
+- 外部キー制約を設定するカラム、参照先の主キーカラムにはインデックスが必要。手動でも設定できますが、自動で設定される。
+
+例えば、books テーブルの author_id カラムに、authors テーブルの id カラムを主キーとする外部キー制約を設定するには、以下のように行う。
+
+CREATE TABLE authors (id INT PRIMARY KEY);
+→主キーを持つ authors テーブル
+
+CREATE TABLE books (id INT, author_id INT, FOREIGN KEY author_fk(author_id) REFERENCES authors(id));
+→外部キーを持つ books テーブル
+
+
+NOT NULL 制約
+- NULL 値を禁止する。
+
+CREATE TABLE products (id INT, name VARCHAR(255) NOT NULL);
+→productsテーブルのnameカラムで、nullを禁止する。
+
+一意（UNIQUENESS）制約
+- 一つのカラムでデータが重複することを禁止する
+- 複数のカラムに設定可能
+- NULL を禁止するわけではない（NULL の重複は許される）
+- 自動でインデックスが設定される
+
+CREATE TABLE employees (id INT, name VARCHAR(255), email VARCHAR(255) UNIQUE);
+→emailカラムに同一の値が入ることを禁止する
+
+CHECK 制約
+- 条件を指定して、その条件を満たさないデータが入るのを禁止する
+
+CREATE TABLE users (id INT PRIMARY KEY, age INT, CONSTRAINT age_check CHECK(age >= 18));
+→users テーブルの age カラムに 18 未満のデータが入ることを禁止する
+
+CHECK 制約に名前を付け（age_check）、条件を設定することで、age カラムに入る値はその制約を守るよう強制できる。
+
+CHECK 制約の内容は、今までのように SHOW TABLE FROM users; では確認できない。
+
+SHOW CREATE TABLE users;
+→チェック制約の内容も確認できる
+
+このクエリは、CHECK 制約の内容だけでなく、テーブルの様々な設定を確認することができるクエリ。
+従って、これまで SHOW INDEX を使って確認していたインデックス情報も SHOW CREATE TABLE table_name; で確認できる。
+
+
+テーブルの更新
+
+テーブルの更新は、ALTER を使って、ALTER TABLE table_name change_command; のように記述する。
+change_command の部分は、table_name にどんな変更を加えようとしているかによって異なる。変更内容には以下のようなものがある。
+- テーブル名、カラム名、インデックス名を変更する
+- カラムの定義を変更する
+- カラムを追加する
+- カラムを削除する
+
+ALTER TABLE table_name RENAME [TO|AS] new_table_name;
+→テーブル名の変更コマンド
+
+ALTER TABLE new_departments RENAME COLUMN start_date TO start_on;
+→カラム名の変更コマンド
+
+ALTER TABLE new_departments RENAME INDEX id_index TO new_id_index;
+→インデックス名の変更コマンド
+
+ALTER TABLE table_name MODIFY column_name new_definition;
+ALTER TABLE new_departments MODIFY id BIGINT UNIQUE;
+→カラム定義の変更コマンド
+
+ALTER TABLE table_name ADD column_name definition [FIRST | AFTER column_name];
+ALTER TABLE new_departments ADD sequence INT NOT NULL AFTER name;
+→カラムの追加コマンド
+
+ALTER TABLE table_name DROP column_name;
+→カラムの削除コマンド
+
+DROP TABLE table_name;
+→テーブルの削除コマンド
+
+TRUNCATE TABLE table_name;
+→テーブルのデータの全削除コマンド
+※DELETE は一行ずつデータを削除していくため、データ数が増えると TRUNCATE よりも削除に時間がかかる
+TRUNCATE でデータを削除した場合、AUTO_INCREMENT 値はその開始値にリセットされる、DELETE で削除した場合は削除前の状態から続けて採番される。
+
