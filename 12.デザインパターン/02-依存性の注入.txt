@@ -1,0 +1,488 @@
+OOP の生成パターンは、関心の分離（separation of concerns）という考え方に基づいている。
+オブジェクトを構築したり、取得したりするだけでもかなりの労力がかかり、それ自体が面倒なタスクになってしまうことがある。
+オブジェクトの作成が、単に New キーワードを使うように簡単ではない場合、その作業を他のタスクから切り離すことを考える。そうすることで、凝集性を高め、コードの複雑化を避けることができる。
+
+関心の分離
+ソフトウェア工学において、プログラムを関心（何をしたいのか）毎に分離する考え方を関心の分離と呼ぶ。関心の分離は複雑なシステムの設計を容易にすることができるため、頻繁に使われる考え方。
+https://gyazo.com/9f400da18459b91b0d515e5c1bf88db1
+
+オブジェクトを取り扱う際には、関数内でオブジェクトを作成するのではなく、オブジェクトを関数のパラメータに入れ、関数の呼び出しがそれらの依存関係を渡す。
+依存関係とは、A、B の 2 つのクラス間の関係のことで、クラス A がクラス B のオブジェクトを何らかの形で使用する場合、A は B に依存関係を持っており、B のオブジェクトが依存関係となる。
+
+依存性の注入（dependency injection）では、依存関係を持つオブジェクトを入力として宣言し、受け渡しができるようにする。
+
+関数型プログラミングのような状態を持たないパラダイムでは、式しかない。関数は、入力パラメータを通してオブジェクトを強制的に取り込んだり、式の中で関数を実行する。
+これらのパラダイムでは、オブジェクトをインスタンス化したり、作成したりすることはできない。
+一方、OOP では式以外にも使うことができる。これらの言語はステートメントと状態を持っているので、オブジェクトをインスタンス化し、途中でローカルスコープの変数に代入したり、
+関数のスコープ外からオブジェクトやデータを取得したりすることができる。
+
+これで状態を使った作業ができるようになりましたが、コードは関数の外のコードに依存するようになる。
+つまり、依存関係に何らかの変更が発生した場合、意図しない副作用が発生したり、コードが複雑化したり、可読性が低下したり、コードが強固に結合された状態になったりすることがある。
+この場合、メモリ内のオブジェクトやオブジェクトのクラス構造が同じままで変化しない等を祈るしか選択肢はなくなる。また、依存関係は可視化することができない。
+
+関数をブラックボックスとして見た場合、メソッドの入力と出力しか注目しない。つまり、外から内部の様子を把握することはできない。
+仮にオブジェクトが関数本体の内部で作成された場合、外から依存関係は一切見ることができない。一方、依存関係が入力パラメータとして指定されている場合は、外から把握することができる。
+
+例として人間の BMI を計算する calculateBMI という関数を考えてみる。
+この際、calculateBMI の中に person オブジェクトを作成するべきではないことがわかる。calculateBMI は person をパラメータとして受け取り、外から依存関係を明らかにする必要がある。
+
+↓ハードコートされた悪い例
+
+class Person{
+    private String firstName;
+    private String lastName;
+    private int age;
+    private double heightM;
+    private double weightKg;
+    private String biologicalSex;
+
+    public Person(String firstName, String lastName, int age, double heightM, double weightKg, String biologicalSex){
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.age = age;
+        this.heightM = heightM;
+        this.weightKg = weightKg;
+        this.biologicalSex = biologicalSex;
+    }
+
+    public double getHeightM(){
+        return this.heightM;
+    }
+
+    public double getWeightKg(){
+        return this.weightKg;
+    }
+
+    public String getName(){
+        return this.firstName + " " + this.lastName;
+    }
+
+    public String toString(){
+        return this.getName();
+    }
+}
+
+class Example{
+    // このメソッドは文字通り、ハードコードされたデータを持つオブジェクトを作成します。これは最悪のシナリオです。
+    public static double calculateBMI(){
+        Person jessica = new Person("Jessica", "Roller", 30, 1.65, 95, "female");
+        return jessica.getWeightKg()/(jessica.getHeightM()*jessica.getHeightM());
+    }
+}
+
+class Main{
+    public static void main(String[] args){
+        System.out.println(Example.calculateBMI());
+    }
+}
+
+より良い方法は、Person クラスのコンストラクタに必要なデータを Person を作成するメソッドのパラメータから受け取ることであるが、ここでも注意が必要。
+仮に、Person クラスがコンストラクタを変更したらどうなるでしょうか？依然として依存関係はそのままで、関数のボディの中に存在している。
+Person クラス構造が変更された場合、関数内でコードを編集する必要がある。最も重要なことは、クラスの依存関係について把握できないこと。
+つまり、calculateBMI が Person を使用していることは、外からはわからない。
+
+class Person{
+    private String firstName;
+    private String lastName;
+    private int age;
+    private double heightM;
+    private double weightKg;
+    private String biologicalSex;
+
+    public Person(String firstName, String lastName, int age, double heightM, double weightKg, String biologicalSex){
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.age = age;
+        this.heightM = heightM;
+        this.weightKg = weightKg;
+        this.biologicalSex = biologicalSex;
+    }
+
+    public double getHeightM(){
+        return this.heightM;
+    }
+
+    public double getWeightKg(){
+        return this.weightKg;
+    }
+
+    public String getName(){
+        return this.firstName + " " + this.lastName;
+    }
+
+    public String toString(){
+        return this.getName();
+    }
+}
+
+class Example{
+    // このメソッドは、パラメータを渡してオブジェクトを作成します。本体内部で作成されたオブジェクトは入力に依存していますが、依存性は指定されていません。
+    つまり、外部からは、calculateBMI内でどのクラスがオブジェクトを作成しているのか正確には把握することはできません。
+    public static double calculateBMI(String firstName, String lastName, int age, double heightM, double weightKg, String biologicalSex){
+        Person person = new Person(firstName, lastName, age, heightM, weightKg, biologicalSex);
+        return person.getWeightKg()/(person.getHeightM()*person.getHeightM());
+    }
+}
+
+class Main{
+    public static void main(String[] args){
+        System.out.println(Example.calculateBMI("Thomas", "Danny", 23, 1.5, 65, "male"));
+    }
+}
+
+calculateBMI は、前もって依存関係を明らかにしておくことが推奨される。単に Person オブジェクトを取得して、呼び出し側が作成を処理するようにすべきである。
+
+class Person{
+    private String firstName;
+    private String lastName;
+    private int age;
+    private double heightM;
+    private double weightKg;
+    private String biologicalSex;
+
+    public Person(String firstName, String lastName, int age, double heightM, double weightKg, String biologicalSex){
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.age = age;
+        this.heightM = heightM;
+        this.weightKg = weightKg;
+        this.biologicalSex = biologicalSex;
+    }
+
+    public double getHeightM(){
+        return this.heightM;
+    }
+
+    public double getWeightKg(){
+        return this.weightKg;
+    }
+
+    public String getName(){
+        return this.firstName + " " + this.lastName;
+    }
+
+    public String toString(){
+        return this.getName();
+    }
+}
+
+class Example{
+    // 依存関係は入力として宣言されています。したがって、外からこの関数がPersonクラスとそのインスタンスに依存していることを把握することができます。
+    public static double calculateBMI(Person obj){
+        return obj.getWeightKg()/(obj.getHeightM()*obj.getHeightM());
+    }
+}
+
+class Main{
+    public static void main(String[] args){
+        // オブジェクトを作成するのは呼び出し元の仕事です。実際のシステムでは、このプロセスはすでに組み込まれている可能性があることに注意してください。これは動的でテスト可能なものになります。
+        System.out.println(Example.calculateBMI(new Person("Thomas", "Danny", 23, 1.5, 65, "male")));
+    }
+}
+
+さらに優れた点として、依存関係を置き換えることができることが挙げられる。つまり、今回のケースでは Person を取得する代わりに、Animal を取得して BMI を計算することができる。
+コードは全く変更されておらず、依存関係だけが変更されている。呼び出し元は、メソッドが必要とする依存関係を注入したり、渡したりする。
+このように、依存性の注入を活用することで、ソフトウェアのリファクタリングと再利用性を改善することができる。
+
+import java.util.Date;
+import java.text.SimpleDateFormat;
+
+class Person{
+    private String firstName;
+    private String lastName;
+    private int age;
+    private double heightM;
+    private double weightKg;
+    private String biologicalSex;
+
+    public Person(String firstName, String lastName, int age, double heightM, double weightKg, String biologicalSex){
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.age = age;
+        this.heightM = heightM;
+        this.weightKg = weightKg;
+        this.biologicalSex = biologicalSex;
+    }
+
+    public double getHeightM(){
+        return this.heightM;
+    }
+
+    public double getWeightKg(){
+        return this.weightKg;
+    }
+
+    public String getName(){
+        return this.firstName + " " + this.lastName;
+    }
+
+    public String toString(){
+        return this.getName();
+    }
+}
+
+class Animal{
+    protected String species;
+    protected double heightM;
+    protected double weightKg;
+    protected double lifeSpanDays;
+    protected String biologicalSex;
+    protected Date spawnTime;
+    protected Date deathTime;
+    protected int hungerPercent = 100;
+    protected int sleepPercent = 100;
+
+    public Animal(String species, double heightM, double weightKg, double lifeSpanDays, String biologicalSex){
+        this.species = species;
+        this.heightM = heightM;
+        this.weightKg = weightKg;
+        this.lifeSpanDays = lifeSpanDays;
+        this.biologicalSex = biologicalSex;
+        this.spawnTime = new java.util.Date();
+    }
+
+    public void eat(){
+        if(!this.isAlive()) return;
+        this.hungerPercent = 0;
+    }
+
+    public void setAsHungry(){
+        if(!this.isAlive()) return;
+        this.hungerPercent = 100;
+    }
+
+    public boolean isHungry(){
+        return this.hungerPercent >= 70;
+    }
+
+    public void sleep(){
+        if(!this.isAlive()) return;
+        this.sleepPercent = 0;
+    }
+
+    public void setAsSleepy(){
+        if(!this.isAlive()) return;
+        this.sleepPercent = 100;
+    }
+
+    public boolean isSleepy(){
+        return this.sleepPercent >= 70;
+    }
+
+    public void die(){
+        this.sleepPercent = 0;
+        this.hungerPercent = 0;
+        this.deathTime = new java.util.Date();
+    }
+
+    public boolean isAlive(){
+        return this.deathTime == null;
+    }
+
+    public String toString(){
+        return this.species + " lives " + this.lifeSpanDays + " days/" + "gender:" + this.biologicalSex + "." + this.status();
+    }
+
+    public String status(){
+        return this.species + " status:" + " Hunger - " + this.hungerPercent + "%, " + "sleepiness:"+this.sleepPercent + "%" + ", Alive - " + this.isAlive() + ". First created at " + this.dateCreated();
+    }
+
+    public String dateCreated(){
+        return new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(this.spawnTime);
+    }
+
+    public double getHeightM(){
+        return this.heightM;
+    }
+
+    public double getWeightKg(){
+        return this.weightKg;
+    }
+}
+
+class Example{
+    // 依存関係はAnimalに変更されました。
+    public static double calculateBMI(Animal obj){
+        return obj.getWeightKg()/(obj.getHeightM()*obj.getHeightM());
+    }
+}
+
+class Main{
+    public static void main(String[] args){
+        System.out.println(Example.calculateBMI(new Animal("Cat", 0.23, 5.2, 4500, "female")));
+    }
+}
+
+
+あるいは依存関係はポリモーフィズムを利用して、BMI インターフェースを実装したオブジェクトを受け取ることもできる。
+呼び出し元が BMI を実装しているオブジェクトを作成する限り、どんな BMI オブジェクトでも受け取れるようになり、コードは問題なく動作する。
+
+import java.util.Date;
+import java.text.SimpleDateFormat;
+
+class Person implements BMIObject{
+    private String firstName;
+    private String lastName;
+    private int age;
+    private double heightM;
+    private double weightKg;
+    private String biologicalSex;
+
+    public Person(String firstName, String lastName, int age, double heightM, double weightKg, String biologicalSex){
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.age = age;
+        this.heightM = heightM;
+        this.weightKg = weightKg;
+        this.biologicalSex = biologicalSex;
+    }
+
+    public double getHeightM(){
+        return this.heightM;
+    }
+
+    public double getWeightKg(){
+        return this.weightKg;
+    }
+
+    public String getName(){
+        return this.firstName + " " + this.lastName;
+    }
+
+    public String toString(){
+        return this.getName();
+    }
+}
+
+class Animal implements BMIObject{
+    protected String species;
+    protected double heightM;
+    protected double weightKg;
+    protected double lifeSpanDays;
+    protected String biologicalSex;
+    protected Date spawnTime;
+    protected Date deathTime;
+    protected int hungerPercent = 100;
+    protected int sleepPercent = 100;
+
+    public Animal(String species, double heightM, double weightKg, double lifeSpanDays, String biologicalSex){
+        this.species = species;
+        this.heightM = heightM;
+        this.weightKg = weightKg;
+        this.lifeSpanDays = lifeSpanDays;
+        this.biologicalSex = biologicalSex;
+        this.spawnTime = new java.util.Date();
+    }
+
+    public void eat(){
+        if(!this.isAlive()) return;
+        this.hungerPercent = 0;
+    }
+
+    public void setAsHungry(){
+        if(!this.isAlive()) return;
+        this.hungerPercent = 100;
+    }
+
+    public boolean isHungry(){
+        return this.hungerPercent >= 70;
+    }
+
+    public void sleep(){
+        if(!this.isAlive()) return;
+        this.sleepPercent = 0;
+    }
+
+    public void setAsSleepy(){
+        if(!this.isAlive()) return;
+        this.sleepPercent = 100;
+    }
+
+    public boolean isSleepy(){
+        return this.sleepPercent >= 70;
+    }
+
+    public void die(){
+        this.sleepPercent = 0;
+        this.hungerPercent = 0;
+        this.deathTime = new java.util.Date();
+    }
+
+    public boolean isAlive(){
+        return this.deathTime == null;
+    }
+
+    public String toString(){
+        return this.species + " lives " + this.lifeSpanDays + " days/" + "gender:" + this.biologicalSex + "." + this.status();
+    }
+
+    public String status(){
+        return this.species + " status:" + " Hunger - " + this.hungerPercent + "%, " + "sleepiness:"+this.sleepPercent + "%" + ", Alive - " + this.isAlive() + ". First created at " + this.dateCreated();
+    }
+
+    public String dateCreated(){
+        return new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(this.spawnTime);
+    }
+
+    public double getHeightM(){
+        return this.heightM;
+    }
+
+    public double getWeightKg(){
+        return this.weightKg;
+    }
+}
+
+interface BMIObject{
+    abstract double getHeightM();
+    abstract double getWeightKg();
+}
+
+class Example{
+    // 依存関係はBMIObjectに変更されました。
+    public static double calculateBMI(BMIObject obj){
+        return obj.getWeightKg()/(obj.getHeightM()*obj.getHeightM());
+    }
+}
+
+class Main{
+    public static void main(String[] args){
+        System.out.println(Example.calculateBMI(new Person("Thomas", "Danny", 23, 1.5, 65, "male")));
+        System.out.println(Example.calculateBMI(new Animal("Cat", 0.23, 5.2, 4500, "female")));
+    }
+}
+
+
+依存性の注入は親子関係に従う。親は呼び出し側であり、子は呼び出される側。親はオブジェクトを作成して設定し、子は親から渡された依存関係を使って処理を計算する。
+言うまでもなく、処理は依存関係によって異なる。
+
+さらに依存性の注入によって、ユニットテストではどのようなデータを通過させ、何を重点的にテストすべきか把握できるので、モジュールや個々の関数のテストははるかに楽になる。
+入力を通して依存関係を指定しなければ、異なるオブジェクトを使ってメソッドの異なるシナリオをテストすることはできない。
+また、依存関係の欠点として、オブジェクトの作成を呼び出し元に委ねなければならない点がある。これは複雑なオブジェクトを作成する際に、問題となる。
+つまり、複雑なオブジェクトを作成するシステムが存在しない場合や、何を渡すかが明確に書かれた契約書を持つ API がない場合、依存関係は逆効果になってしまう恐れがある。
+つまり、呼び出し元に負担がかかり、呼び出し元の複雑度が増す可能性がある。
+
+このような理由のため、フレームワークやシステムでは、制御の反転（inversion of control, IoC）と呼ばれるものが実装されている。制御の反転では、ユーザーが従わなければならないガイドラインがすでに用意されている。
+
+多くのフレームワークやシステムでは、DIコンテナ（dependency injection container）と呼ばれるものが提供されている。
+DI コンテナとはインスタンスの生成に必要なオブジェクトと関数を含むコンテナで、システム内でそれらに依存するメソッドに渡すために使われる。
+
+メソッドが呼び出されると、システムは依存関係や呼び出しの箇所、キーなどの情報を把握することができるため、正しいオブジェクトがコンテナから取得され、システムが呼び出す関数に渡される。
+フレームワークやシステムによって、サービスロケータが提供されることもある。これらのロケータはレジストリを持ち、メソッドが必要とする依存関係を正確に判断したり調べたりすることができる。
+https://gyazo.com/dbf723cb547abc6dd2296f4380b1a409
+
+これら IoC や依存性の注入が実装されたシステムは、コンテナにインスタンスを生成するオブジェクトや関数を追加する方法や、サービスロケータやレジストリを介してオブジェクトを配置する方法を常に提供している。
+したがって、大規模なフレームワークを使う場合には、これらを意識する。
+
+何を依存関係として判断するかは、開発者によります。例えば、以下のような場合では、B クラスのオブジェクトを A クラスの依存関係として扱わなくても良いケースがある。
+
+1. メソッド自体がメインシステムの場合
+メインシステムの仕事は、他のメソッドが使用するオブジェクトを作成すること。
+
+2. A と B のオブジェクトが両方とも同じクラスのものである場合（A = B）
+
+3. クラス A とクラス B の両方が同じエコシステムの一部である場合
+両方とも全く同じモジュール下にある可能性がある。設計上、モジュールの内部を外から見えないようにしていることもある。
+モジュールからの全てのオブジェクトは制御されているため、相互に接続され、お互いに依存していることは問題にはならない。
+
+依存関係をメソッドの入力として使わなければならないことを常に念頭に置くよう意識する。
