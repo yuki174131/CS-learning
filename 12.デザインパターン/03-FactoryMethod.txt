@@ -32,3 +32,988 @@ Factory Method は、継承とサブクラス化のおかげで柔軟性と拡�
 
 FactoryMethodの例
 
+FairyWorld という遊園地を作成します。FairyWorld では、ミニチュアハウスを作ったり、おもちゃを作ったり、一緒に遊べるペットを貸し出したりと、様々な活動を行う。
+ペット体験を案内するアシスタントロボットを FairyWorld 内で作成する。ペット PlayfulPet は、以下のメソッドを持つインターフェースである。
+
+String pet.playfulPetInfo() :  // ペットに関する説明を文字列で返す。
+String pet.play(): // ペットの遊び方を表す文字列を返す。
+String pet.playNoise(): // ペットが遊んでいるときの音を表す文字列を返す。
+double pet.cost(): // ペットを1時間ごとにレンタルするのにかかる費用を返す。
+bool likesActivity(String activity): // ペットが特定の活動をするのが好きかどうかを返す。
+bool dislikesActivity(String activity): // ペットが特定の活動を嫌がるかどうかを返す。
+String doActivity(String activity): // あるアクティビティが発生したときに何が起こるかを記述した文字列を返す。
+
+PlayfulPetAssistant は、ペットを貸し出すロボット。ロボットには、人間とペットのツアーがパッケージ化されている。
+ツアーの 1 つとして、人間とペットが挨拶をして、公園内を歩き、1 つのランダムなアクティビティを行う「all-rounder pack」がデフォルトとして設定されている。
+また、全く同じツアーで最後に 3 つのランダムなアクティビティを行う「deluxe rounder pack」もある。
+
+また、この PlayfulPetAssistant には、createPlayfulPet という、ペットを作成するための Factory Method が用意されている。
+この PlayfulPetAssistant は抽象クラスに設定する。デフォルトでは、抽象メソッドである createPlayfulPet 以外のメソッドは全て実装されており、
+PlayfulPetAssistant のサブクラスは、この createPlayfulPet Factory Methodを実装し、特定のペットを作成する必要がある。
+
+PlayfulPetAssistant は、ロボットが誘導する人間（currentPerson）、ペットのレンタル時間（double currentRentTime）、ガイドの一連の活動を文字列として含む。
+PlayfulPetAssistant は以下のメソッドを持っている。
+
+String[] getActivities: // ロボットがガイダンスをサポートする活動の配列を返す。
+void setPerson(Person p): // ロボットが案内するcurrentPersonを設定する。
+void setHours(int hours): // ペットをレンタルする時間を設定する。
+double getHours(): // ペットをレンタルする時間を返す。
+void reset(): // 全ての状態をデフォルトにクリアしてロボットをリセットする。
+PlayfulPet createPlayfulPet()： // ペットを作成して返す。これはFactory Method。
+
+PlayfulPet インターフェースを拡張した Cat オブジェクトを作成し、さらに Factory Method が Cat オブジェクトを作成する、
+PlayfulPetAssistant を拡張した PlayfulCatAssistant という具象クラスを作成する
+https://gyazo.com/8f1f44f632c9e6e6aa42aaf0176dbcba
+
+import java.util.Random;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.text.SimpleDateFormat;
+
+class RandomWrapper{
+    public static double getRanDouble(double min, double max){
+        Random r = new Random();
+        return min + (max - min) * r.nextDouble();
+    }
+
+    public static boolean ranBoolean(){
+        return new Random().nextBoolean();
+    }
+}
+
+// 1-179行目は、AnimalクラスとPersonの一般的な構造です。ペットはAnimalまたはAnimalのサブクラスを拡張します。
+class Name{
+    private String firstName;
+    private String lastName;
+
+    public Name(String firstName, String lastName){
+        this.firstName = firstName;
+        this.lastName = lastName;
+    }
+
+    public String toString(){
+        return this.firstName + " " + this.lastName;
+    }
+}
+
+class BMI{
+    private double heightM;
+    private double weightKg;
+
+    public BMI(double heightM, double weightKg){
+        this.heightM = heightM;
+        this.weightKg = weightKg;
+    }
+
+    public double getWeightKg(){
+        return this.weightKg;
+    }
+
+    public double getValue(){
+        return this.weightKg/(this.heightM*this.heightM);
+    }
+
+    public String toString(){
+        return this.heightM + " meters, " + this.weightKg + "kg, BMI:" + this.getValue();
+    }
+}
+
+class Animal{
+    protected String species;
+    protected BMI bmi;
+    protected double lifeSpanDays;
+    protected String biologicalSex;
+    protected Date spawnTime;
+    protected Date deathTime;
+    protected int hungerPercent = 100;
+    protected int sleepPercent = 100;
+
+    public Animal(String species, double heightM, double weightKg, double lifeSpanDays, String biologicalSex){
+        this.species = species;
+        this.bmi = new BMI(heightM, weightKg);
+        this.lifeSpanDays = lifeSpanDays;
+        this.biologicalSex = biologicalSex;
+        this.spawnTime = new java.util.Date();
+    }
+
+    public void eat(){
+        if(!this.isAlive()) return;
+        this.hungerPercent = 0;
+    }
+
+    public void setAsHungry(){
+        if(!this.isAlive()) return;
+        this.hungerPercent = 100;
+    }
+
+    public boolean isHungry(){
+        return this.hungerPercent >= 70;
+    }
+
+    public void sleep(){
+        if(!this.isAlive()) return;
+        this.sleepPercent = 0;
+    }
+
+    public void setAsSleepy(){
+        if(!this.isAlive()) return;
+        this.sleepPercent = 100;
+    }
+
+    public boolean isSleepy(){
+        return this.sleepPercent >= 70;
+    }
+
+    public void die(){
+        this.sleepPercent = 0;
+        this.hungerPercent = 0;
+        this.deathTime = new java.util.Date();
+    }
+
+    public boolean isAlive(){
+        return this.deathTime == null;
+    }
+
+    public String toString(){
+        return this.species + " " + this.bmi + " lives " + this.lifeSpanDays + " days/" + "gender:" + this.biologicalSex + "." + this.status();
+    }
+
+    public String status(){
+        return this.species + " status:" + " Hunger - " + this.hungerPercent + "%, " + "sleepiness:"+this.sleepPercent + "%" + ", Alive - " + this.isAlive() + ". First created at " + this.dateCreated();
+    }
+
+    public String dateCreated(){
+        return new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(this.spawnTime);
+    }
+}
+
+class Mammal extends Animal{
+    private double bodyTemperatureC;
+    private double avgBodyTemperatureC;
+
+    public Mammal(String species, double heightM, double weightKg, double lifeSpanDays, String biologicalSex, double avgBodyTemperatureC){
+        super(species, heightM, weightKg, lifeSpanDays, biologicalSex);
+
+        this.avgBodyTemperatureC = avgBodyTemperatureC;
+        this.bodyTemperatureC = this.avgBodyTemperatureC;
+    }
+
+    public void eat(){
+        super.eat();
+        System.out.println("this " + this.species + " is eating with its single lower jaw");
+    }
+
+    public String toString(){
+        return super.toString() + " " + this.mammalInformation();
+    }
+
+    public void increaseBodyHeat(double celcius){
+        this.bodyTemperatureC+=celcius;
+    }
+
+    public void decreaseBodyHeat(double celcius){
+        this.bodyTemperatureC-=celcius;
+    }
+
+    public void adjustBodyHeat(){
+        this.bodyTemperatureC = this.avgBodyTemperatureC;
+    }
+
+    public String mammalInformation(){
+        return "This is a mammal with a temperature of: "+this.bodyTemperatureC;
+    }
+}
+
+class Person extends Mammal{
+    public static final String SPECIES = "Human";
+    public static final double LIFE_EXPECTANCY = 30000;
+    public static final double BODY_TEMPERATURE = 36;
+
+    private Name name;
+    private int age;
+
+    public Person(String firstName, String lastName, int age, double heightM, double weightKg, String biologicalSex){
+        super(Person.SPECIES, heightM, weightKg, Person.LIFE_EXPECTANCY, biologicalSex, Person.BODY_TEMPERATURE);
+        this.name = new Name(firstName, lastName);
+        this.age = age;
+    }
+
+    public String getName(){
+        return this.name.toString();
+    }
+
+    public String toString(){
+        return super.toString() + ". The name of this Person is " + this.getName();
+    }
+}
+
+// PlayfulPetAssistantは、factory methodを使って、このインターフェースのオブジェクトを作成します。
+interface PlayfulPet{
+    abstract public String play();
+    abstract public String playWithPerson(Person person);
+    abstract public String playNoise();
+    abstract public String getPetName();
+    abstract public double getRentalCosts();
+    abstract public boolean likesActivity(String activity);
+    abstract public boolean dislikesActivity(String activity);
+    abstract public String doActivity(String activity);
+}
+
+// ペットはPlayfulPetインターフェースを実装しなければならないことに注意してください。
+class Cat extends Mammal implements PlayfulPet{
+    public static final String SPECIES = "Cat";
+    public static final double LIFE_EXPECTANCY = 5500;
+    public static final double BODY_TEMPERATURE = 37;
+
+    private static final double PLAYFUL_HOURLY_COSTS = 50;
+    private static final String[] LIKED_ACTIVITIES = {"eat","nap","groom","drink","crawl","explore","pet"};
+    private static final String[] DISLIKED_ACTIVITIES = {"bath"};
+
+    public Cat(double heightM, double weightKg, String biologicalSex){
+        super(Cat.SPECIES, heightM, weightKg, Cat.LIFE_EXPECTANCY, biologicalSex, Cat.BODY_TEMPERATURE);
+    }
+
+    public String toString(){
+        return super.toString() + " this is a cat";
+    }
+
+    public void meow(){
+        System.out.println("Meooow");
+    }
+
+    public String getPetName(){
+        return this.species;
+    }
+
+    public String play(){
+        return "This cat starts rolling on the floor, and pretends to play predator";
+    }
+
+    public String playWithPerson(Person person){
+        String s = "The cat stares at " + person.getName();
+        s+= ". After taking kin to " + person.getName() + ", " + person.getName() + " throws a mouse toy at this cat and the cat starts chasing the mouse toy";
+        return s;
+    }
+
+    public String playNoise(){
+        return "Meow";
+    }
+
+    public double getRentalCosts(){
+        return this.PLAYFUL_HOURLY_COSTS;
+    }
+
+    public boolean likesActivity(String activity){
+        return Arrays.asList(this.LIKED_ACTIVITIES).contains(activity);
+    };
+
+    public boolean dislikesActivity(String activity){
+        return Arrays.asList(this.DISLIKED_ACTIVITIES).contains(activity);
+    };
+
+    public String doActivity(String activity){
+        if(activity == "eat"){
+            this.eat();
+            return "The cat enjoyed eating food.";
+        }
+        else if(activity == "nap"){
+            this.sleep();
+            return "The cat took a good nap.";
+        }
+        else if(this.likesActivity(activity)) return "Meow. The cat really enjoyed the " + activity + " activity.";
+        else if(this.likesActivity(activity)) return "The cat really hated the " + activity + " activity.";
+        return "The cat felt indiferent about the " + activity + " activity.";
+    };
+}
+
+// PlayfulPetAssistantと呼ばれるペット用ロボットアシスタントを定義した抽象クラスです。
+// factory method以外は全ての処理が定義されていることに注意してください。具象クラスはこのクラスを拡張し、createPlayfulPet()関数を実装します。
+abstract class PlayfulPetAssistant{
+    protected static final double DEFAULT_RENT_TIME = 1.0;
+    protected static final String DEFAULT_TOUR = "all-rounder pack";
+
+    protected Person currentPerson;
+    protected double currentRentTime = PlayfulPetAssistant.DEFAULT_RENT_TIME;
+    protected static String[] availableActivities = {"eat","walk","drink","nap","pet","run","explore"};
+    protected static String[] availableTours = {"all-rounder pack", "deluxe rounder pack"};
+
+    public String[] getActivities(){
+        return this.availableActivities;
+    }
+
+    public String[] getAvailableTours(){
+        return this.availableTours;
+    }
+
+    public boolean isValidTour(String tour){
+        return Arrays.asList(this.getAvailableTours()).contains(tour);
+    }
+
+    protected String getRandomActivity(){
+        List<String> activities = Arrays.asList(this.getActivities());
+        int ran = new Random().nextInt(activities.size());
+        return activities.get(ran);
+    }
+
+    public void setPerson(Person person){
+        this.currentPerson = person;
+    }
+
+    public void setHours(double hours){
+        this.currentRentTime = hours;
+    }
+
+    public double getCurrentRentTime(){
+        return this.currentRentTime;
+    }
+
+    public void reset(){
+        this.currentPerson = null;
+        this.currentRentTime = this.DEFAULT_RENT_TIME;
+    }
+
+    // runAssistanceTourは、ペットをレンタルしている間に、personのサポートに関する全体のアルゴリズムを実行する関数です。
+    public double runAssistanceTour(Person person){
+        return this.runAssistanceTour(person, this.DEFAULT_TOUR);
+    }
+
+    public double runAssistanceTour(Person person, String tour){
+        if(!this.isValidTour(tour)) System.out.println("The tour guide does not accept the " + tour + " tour.");
+
+        // factory methodを使ってペットを作成します。サブクラスは、このクラスを拡張し、独自のfactory methodを作成して、特定のペットを作成します。
+        PlayfulPet playfulPet = this.createPlayfulPet();
+
+        System.out.println("");
+        System.out.println("Booting up... Playful Pet Assistance robot at your service.");
+        System.out.println("Printing information about the Person to service..." + person);
+        System.out.println("");
+        System.out.println("Printing information about the Playful Pet - " + playfulPet.getPetName() + " to service..." + playfulPet);
+
+        if(tour == "all-rounder pack" || tour == "deluxe rounder pack"){
+            int count = tour == "all-rounder pack" ? 1 : 3;
+            this.genericRounderTour(count, person, playfulPet);
+        }
+
+        // ここにさらにツアーを追加することができます。
+        else{
+            System.out.println("The tour assistant robot for " + playfulPet.getPetName() + " and " + person.getName() + " did nothing.");
+        }
+
+        double rentalCosts = playfulPet.getRentalCosts() * this.getCurrentRentTime();
+
+        // ツアーが終了すると、このアシスタントロボットをリセットします。
+        this.reset();
+
+        // レンタルにいくらかかったか返します。
+        return rentalCosts;
+    }
+
+    private void genericRounderTour(int activityCount, Person person, PlayfulPet pet){
+        String newLine = System.lineSeparator();
+        System.out.println(newLine + "Now starting the generic rounder tour with " + activityCount + " activity(s)");
+        System.out.println(person.getName() + " greets " + pet.getPetName() + newLine);
+        System.out.println(pet.play() + newLine);
+        System.out.println(pet.playNoise() + newLine);
+        System.out.println(pet.playWithPerson(person) + newLine);
+        for(int i = 0; i < activityCount; i++){
+            String activity = this.getRandomActivity();
+            System.out.println(pet.getPetName() + " will now " + activity);
+            System.out.println("--------");
+            System.out.println(pet.doActivity(activity));
+            System.out.println("--------" + newLine);
+        }
+    }
+
+    // Factory Method
+    public abstract PlayfulPet createPlayfulPet();
+}
+
+
+// これで、Factory Methodを実装するために、PlayfulPetAssistantから具象クラスを作ることができるようになりました。Factory Methodは、オブジェクトの作成をサブクラスに委ねる権限を与えていることを覚えておいてください。
+// 実際に使用するオブジェクト、新しいPlayfulPet、そしてオブジェクトを作成するPlayfulPetAssistantのサブクラスを作成することだけに集中すればokです。
+class PlayfulCatAssistant extends PlayfulPetAssistant{
+    // ペットであるcatを返します。
+    public PlayfulPet createPlayfulPet(){
+        return new Cat(RandomWrapper.getRanDouble(0.15,0.3), RandomWrapper.getRanDouble(2.0,4.9), RandomWrapper.ranBoolean() ? "male" : "female");
+    }
+}
+
+// FairyWorldでできることを全て収録しています。
+class FairyWorld{
+    public void rentPet(PlayfulPetAssistant assistant, Person person){
+        System.out.println("Thank you for your pet rental!");
+        double costs = assistant.runAssistanceTour(person);
+        System.out.println(costs + " dollars were charged to " + person.getName() + "'s credit card.");
+        System.out.println("xxxxxxxxxxxxxxxxxxxxxxx" + System.lineSeparator());
+    }
+}
+
+class Main{
+    public static void main(String[] args){
+        FairyWorld fairyWorld = new FairyWorld();
+        Person jessica = new Person("Jessica", "Roller", 30, 1.65, 95, "female");
+
+        fairyWorld.rentPet(new PlayfulCatAssistant(), jessica);
+    }
+}
+
+Factory Method は、どのオブジェクトを作成するかをサブクラスに委ねる。これで、構造と設計によって FairyWorld 内でどのような種類のペットでもレンタルすることができるようになった。
+あとは、新しいペットを表す PlayfulPet インターフェースを拡張した新しいクラスを作成し、Factory Method を実装した PlayfulPetAssistant のサブクラスを作成するだけになる。
+https://gyazo.com/c691a9dfb64166f8910cbcaf41752291
+
+import java.util.Random;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.text.SimpleDateFormat;
+
+class RandomWrapper{
+    public static double getRanDouble(double min, double max){
+        Random r = new Random();
+        return min + (max - min) * r.nextDouble();
+    }
+
+    public static boolean ranBoolean(){
+        return new Random().nextBoolean();
+    }
+}
+
+class Name{
+    private String firstName;
+    private String lastName;
+
+    public Name(String firstName, String lastName){
+        this.firstName = firstName;
+        this.lastName = lastName;
+    }
+
+    public String toString(){
+        return this.firstName + " " + this.lastName;
+    }
+}
+
+class BMI{
+    private double heightM;
+    private double weightKg;
+
+    public BMI(double heightM, double weightKg){
+        this.heightM = heightM;
+        this.weightKg = weightKg;
+    }
+
+    public double getWeightKg(){
+        return this.weightKg;
+    }
+
+    public double getValue(){
+        return this.weightKg/(this.heightM*this.heightM);
+    }
+
+    public String toString(){
+        return this.heightM + " meters, " + this.weightKg + "kg, BMI:" + this.getValue();
+    }
+}
+
+class Animal{
+    protected String species;
+    protected BMI bmi;
+    protected double lifeSpanDays;
+    protected String biologicalSex;
+    protected Date spawnTime;
+    protected Date deathTime;
+    protected int hungerPercent = 100;
+    protected int sleepPercent = 100;
+
+    public Animal(String species, double heightM, double weightKg, double lifeSpanDays, String biologicalSex){
+        this.species = species;
+        this.bmi = new BMI(heightM, weightKg);
+        this.lifeSpanDays = lifeSpanDays;
+        this.biologicalSex = biologicalSex;
+        this.spawnTime = new java.util.Date();
+    }
+
+    public void eat(){
+        if(!this.isAlive()) return;
+        this.hungerPercent = 0;
+    }
+
+    public void setAsHungry(){
+        if(!this.isAlive()) return;
+        this.hungerPercent = 100;
+    }
+
+    public boolean isHungry(){
+        return this.hungerPercent >= 70;
+    }
+
+    public void sleep(){
+        if(!this.isAlive()) return;
+        this.sleepPercent = 0;
+    }
+
+    public void setAsSleepy(){
+        if(!this.isAlive()) return;
+        this.sleepPercent = 100;
+    }
+
+    public boolean isSleepy(){
+        return this.sleepPercent >= 70;
+    }
+
+    public void die(){
+        this.sleepPercent = 0;
+        this.hungerPercent = 0;
+        this.deathTime = new java.util.Date();
+    }
+
+    public boolean isAlive(){
+        return this.deathTime == null;
+    }
+
+    public String toString(){
+        return this.species + " " + this.bmi + " lives " + this.lifeSpanDays + " days/" + "gender:" + this.biologicalSex + "." + this.status();
+    }
+
+    public String status(){
+        return this.species + " status:" + " Hunger - " + this.hungerPercent + "%, " + "sleepiness:"+this.sleepPercent + "%" + ", Alive - " + this.isAlive() + ". First created at " + this.dateCreated();
+    }
+
+    public String dateCreated(){
+        return new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(this.spawnTime);
+    }
+}
+
+class Mammal extends Animal{
+    private double bodyTemperatureC;
+    private double avgBodyTemperatureC;
+
+    public Mammal(String species, double heightM, double weightKg, double lifeSpanDays, String biologicalSex, double avgBodyTemperatureC){
+        super(species, heightM, weightKg, lifeSpanDays, biologicalSex);
+
+        this.avgBodyTemperatureC = avgBodyTemperatureC;
+        this.bodyTemperatureC = this.avgBodyTemperatureC;
+    }
+
+    public void eat(){
+        super.eat();
+        System.out.println("this " + this.species + " is eating with its single lower jaw");
+    }
+
+    public String toString(){
+        return super.toString() + " " + this.mammalInformation();
+    }
+
+    public void increaseBodyHeat(double celcius){
+        this.bodyTemperatureC+=celcius;
+    }
+
+    public void decreaseBodyHeat(double celcius){
+        this.bodyTemperatureC-=celcius;
+    }
+
+    public void adjustBodyHeat(){
+        this.bodyTemperatureC = this.avgBodyTemperatureC;
+    }
+
+    public String mammalInformation(){
+        return "This is a mammal with a temperature of: "+this.bodyTemperatureC;
+    }
+}
+
+class Person extends Mammal{
+    public static final String SPECIES = "Human";
+    public static final double LIFE_EXPECTANCY = 30000;
+    public static final double BODY_TEMPERATURE = 36;
+
+    private Name name;
+    private int age;
+
+    public Person(String firstName, String lastName, int age, double heightM, double weightKg, String biologicalSex){
+        super(Person.SPECIES, heightM, weightKg, Person.LIFE_EXPECTANCY, biologicalSex, Person.BODY_TEMPERATURE);
+        this.name = new Name(firstName, lastName);
+        this.age = age;
+    }
+
+    public String getName(){
+        return this.name.toString();
+    }
+
+    public String toString(){
+        return super.toString() + ". The name of this Person is " + this.getName();
+    }
+}
+
+interface PlayfulPet{
+    abstract public String play();
+    abstract public String playWithPerson(Person person);
+    abstract public String playNoise();
+    abstract public String getPetName();
+    abstract public double getRentalCosts();
+    abstract public boolean likesActivity(String activity);
+    abstract public boolean dislikesActivity(String activity);
+    abstract public String doActivity(String activity);
+}
+
+class Cat extends Mammal implements PlayfulPet{
+    public static final String SPECIES = "Cat";
+    public static final double LIFE_EXPECTANCY = 5500;
+    public static final double BODY_TEMPERATURE = 37;
+
+    private static final double PLAYFUL_HOURLY_COSTS = 50;
+    private static final String[] LIKED_ACTIVITIES = {"eat","nap","groom","drink","crawl","explore","pet"};
+    private static final String[] DISLIKED_ACTIVITIES = {"bath"};
+
+    public Cat(double heightM, double weightKg, String biologicalSex){
+        super(Cat.SPECIES, heightM, weightKg, Cat.LIFE_EXPECTANCY, biologicalSex, Cat.BODY_TEMPERATURE);
+    }
+
+    public String toString(){
+        return super.toString() + " this is a cat";
+    }
+
+    public void meow(){
+        System.out.println("Meooow");
+    }
+
+    public String getPetName(){
+        return this.species;
+    }
+
+    public String play(){
+        return "This cat starts rolling on the floor, and pretends to play predator";
+    }
+
+    public String playWithPerson(Person person){
+        String s = "The cat stares at " + person.getName();
+        s+= ". After taking kin to " + person.getName() + ", " + person.getName() + " throws a mouse toy at this cat and the cat starts chasing the mouse toy";
+        return s;
+    }
+
+    public String playNoise(){
+        return "Meow";
+    }
+
+    public double getRentalCosts(){
+        return this.PLAYFUL_HOURLY_COSTS;
+    }
+
+    public boolean likesActivity(String activity){
+        return Arrays.asList(this.LIKED_ACTIVITIES).contains(activity);
+    };
+
+    public boolean dislikesActivity(String activity){
+        return Arrays.asList(this.DISLIKED_ACTIVITIES).contains(activity);
+    };
+
+    public String doActivity(String activity){
+        if(activity == "eat"){
+            this.eat();
+            return "The cat enjoyed eating food.";
+        }
+        else if(activity == "nap"){
+            this.sleep();
+            return "The cat took a good nap.";
+        }
+        else if(this.likesActivity(activity)) return "Meow. The cat really enjoyed the " + activity + " activity.";
+        else if(this.likesActivity(activity)) return "The cat really hated the " + activity + " activity.";
+        return "The cat felt indiferent about the " + activity + " activity.";
+    };
+}
+
+abstract class PlayfulPetAssistant{
+    protected static final double DEFAULT_RENT_TIME = 1.0;
+    protected static final String DEFAULT_TOUR = "all-rounder pack";
+
+    protected Person currentPerson;
+    protected double currentRentTime = PlayfulPetAssistant.DEFAULT_RENT_TIME;
+    protected static String[] availableActivities = {"eat","walk","drink","nap","pet","run","explore"};
+    protected static String[] availableTours = {"all-rounder pack", "deluxe rounder pack"};
+
+    public String[] getActivities(){
+        return this.availableActivities;
+    }
+
+    public String[] getAvailableTours(){
+        return this.availableTours;
+    }
+
+    public boolean isValidTour(String tour){
+        return Arrays.asList(this.getAvailableTours()).contains(tour);
+    }
+
+    protected String getRandomActivity(){
+        List<String> activities = Arrays.asList(this.getActivities());
+        int ran = new Random().nextInt(activities.size());
+        return activities.get(ran);
+    }
+
+    public void setPerson(Person person){
+        this.currentPerson = person;
+    }
+
+    public void setHours(double hours){
+        this.currentRentTime = hours;
+    }
+
+    public double getCurrentRentTime(){
+        return this.currentRentTime;
+    }
+
+    public void reset(){
+        this.currentPerson = null;
+        this.currentRentTime = this.DEFAULT_RENT_TIME;
+    }
+
+    public double runAssistanceTour(Person person){
+        return this.runAssistanceTour(person, this.DEFAULT_TOUR);
+    }
+
+    public double runAssistanceTour(Person person, String tour){
+        if(!this.isValidTour(tour)) System.out.println("The tour guide does not accept the " + tour + " tour.");
+
+        PlayfulPet playfulPet = this.createPlayfulPet();
+
+        System.out.println("");
+        System.out.println("Booting up... Playful Pet Assistance robot at your service.");
+        System.out.println("Printing information about the Person to service..." + person);
+        System.out.println("");
+        System.out.println("Printing information about the Playful Pet - " + playfulPet.getPetName() + " to service..." + playfulPet);
+
+        if(tour == "all-rounder pack" || tour == "deluxe rounder pack"){
+            int count = tour == "all-rounder pack" ? 1 : 3;
+            this.genericRounderTour(count, person, playfulPet);
+        }
+        else{
+            System.out.println("The tour assistant robot for " + playfulPet.getPetName() + " and " + person.getName() + " did nothing.");
+        }
+
+        double rentalCosts = playfulPet.getRentalCosts() * this.getCurrentRentTime();
+
+        this.reset();
+
+        return rentalCosts;
+    }
+
+    private void genericRounderTour(int activityCount, Person person, PlayfulPet pet){
+        String newLine = System.lineSeparator();
+        System.out.println(newLine + "Now starting the generic rounder tour with " + activityCount + " activity(s)");
+        System.out.println(person.getName() + " greets " + pet.getPetName() + newLine);
+        System.out.println(pet.play() + newLine);
+        System.out.println(pet.playNoise() + newLine);
+        System.out.println(pet.playWithPerson(person) + newLine);
+        for(int i = 0; i < activityCount; i++){
+            String activity = this.getRandomActivity();
+            System.out.println(pet.getPetName() + " will now " + activity);
+            System.out.println("--------");
+            System.out.println(pet.doActivity(activity));
+            System.out.println("--------" + newLine);
+        }
+    }
+
+    public abstract PlayfulPet createPlayfulPet();
+}
+
+class PlayfulCatAssistant extends PlayfulPetAssistant{
+    public PlayfulPet createPlayfulPet(){
+        return new Cat(RandomWrapper.getRanDouble(0.15,0.3), RandomWrapper.getRanDouble(2.0,4.9), RandomWrapper.ranBoolean() ? "male" : "female");
+    }
+}
+
+class FairyWorld{
+    public void rentPet(PlayfulPetAssistant assistant, Person person){
+        System.out.println("Thank you for your pet rental!");
+        double costs = assistant.runAssistanceTour(person);
+        System.out.println(costs + " dollars were charged to " + person.getName() + "'s credit card.");
+        System.out.println("xxxxxxxxxxxxxxxxxxxxxxx" + System.lineSeparator());
+    }
+}
+
+// これでシステムが整ったので、あとは作成したい個々のPlayfulPetにクラスを追加して、Factory Methodを含むクライアントシステムをサブクラス化するだけです。今回のケースでは、PlayfulPetAssistantになります。
+// PlayfulPetであるDogと、PlayfulDogAssistant（Factory MethodがDogを生成します）作成してください。
+class Dog extends Mammal implements PlayfulPet{
+    public static final String SPECIES = "Dog";
+    public static final double LIFE_EXPECTANCY = 4800;
+    public static final double Body_TEMPERATURE = 39;
+
+    private static final double PLAYFUL_HOURLY_COSTS = 35;
+    private static final String[] LIKED_ACTIVITIES = {"eat","nap","chase","swim","drink","run","explore","pet"};
+    private static final String[] DISLIKED_ACTIVITIES = {"hug","dressup"};
+
+    public Dog(double heightM, double weightKg, String biologicalSex){
+        super(Dog.SPECIES, heightM, weightKg, Dog.LIFE_EXPECTANCY, biologicalSex, Dog.LIFE_EXPECTANCY);
+    }
+
+    public String toString(){
+        return super.toString() + " this is a dog";
+    }
+
+    public void woof(){
+        System.out.println("Woof Woof");
+    }
+
+    public String getPetName(){
+        return this.species;
+    }
+
+    public String play(){
+        return "This dog starts running on the park and chases a ball.";
+    }
+
+    public String playWithPerson(Person person){
+        String s = "The dog runs towards " + person.getName();
+        s+= ". After the dog taking kin to " + person.getName() + ", " + person.getName() + " throws a frisbee disk and the dog chases it.";
+        return s;
+    }
+
+    public String playNoise(){
+        return "Wooooof Woooof";
+    }
+
+    public double getRentalCosts(){
+        return this.PLAYFUL_HOURLY_COSTS;
+    }
+
+    public boolean likesActivity(String activity){
+        return Arrays.asList(this.LIKED_ACTIVITIES).contains(activity);
+    };
+
+    public boolean dislikesActivity(String activity){
+        return Arrays.asList(this.DISLIKED_ACTIVITIES).contains(activity);
+    };
+
+    public String doActivity(String activity){
+        if(activity == "eat"){
+            this.eat();
+            return "The dog ate the entire food in a few bites.";
+        }
+        else if(activity == "nap"){
+            this.sleep();
+            return "The dog took a quick nap.";
+        }
+        else if(this.likesActivity(activity)) return "Woof Woof. The dog really enjoyed the " + activity + " activity.";
+        else if(this.likesActivity(activity)) return "The dog did not like " + activity + " activity. The dog walked away";
+        return "The dog felt indiferent about the " + activity + " activity.";
+    };
+}
+
+// PlayfulPetであるRabbitと、PlayfulRabbitAssistant（Factory MethodがRabbitを生成します）作成してください。
+class Rabbit extends Mammal implements PlayfulPet{
+    public static final String SPECIES = "Rabbit";
+    public static final double LIFE_EXPECTANCY = 3000;
+    public static final double Body_TEMPERATURE = 40;
+
+    private static final double PLAYFUL_HOURLY_COSTS = 30;
+    private static final String[] LIKED_ACTIVITIES = {"eat","nap","chase","drink","jump","dig"};
+    private static final String[] DISLIKED_ACTIVITIES = {"bath","dressup"};
+
+    public Rabbit(double heightM, double weightKg, String biologicalSex){
+        super(Rabbit.SPECIES, heightM, weightKg, Rabbit.LIFE_EXPECTANCY, biologicalSex, Rabbit.LIFE_EXPECTANCY);
+    }
+
+    public String toString(){
+        return super.toString() + " this is a rabbit";
+    }
+
+    public void woof(){
+        System.out.println("Squeak Squeak");
+    }
+
+    public String getPetName(){
+        return this.species;
+    }
+
+    public String play(){
+        return "This rabbit starts jumping around and chases an insect on the grass.";
+    }
+
+    public String playWithPerson(Person person){
+        String s = "The bunny hops towards " + person.getName();
+        s+= ". After the rabbit stares at " + person.getName() + ", " + person.getName() + " makes the rabbit chase a small carrot. The rabbit hops towards it.";
+        return s;
+    }
+
+    public String playNoise(){
+        return "Squeak";
+    }
+
+    public double getRentalCosts(){
+        return this.PLAYFUL_HOURLY_COSTS;
+    }
+
+    public boolean likesActivity(String activity){
+        return Arrays.asList(this.LIKED_ACTIVITIES).contains(activity);
+    };
+
+    public boolean dislikesActivity(String activity){
+        return Arrays.asList(this.DISLIKED_ACTIVITIES).contains(activity);
+    };
+
+    public String doActivity(String activity){
+        if(activity == "eat"){
+            this.eat();
+            return "The rabbit chew on the food bit by bit taking tiny bites.";
+        }
+        else if(activity == "nap"){
+            this.sleep();
+            return "The rabbit took a long nap.";
+        }
+        else if(this.likesActivity(activity)) return ".... The Rabbit really enjoyed the " + activity + " activity.";
+        else if(this.likesActivity(activity)) return "Squeeeak. The Rabbit did not like " + activity + " activity. The rabbit quickly hopped away";
+        return "The rabbit felt indiferent about the " + activity + " activity.";
+    };
+}
+
+// PlayfulDogAssistantとPlayfulRabbitAssistantは、サブクラス化することによって、PlayfulPetAssistantのFactory Methodを実装します。作成されるオブジェクトが異なる点以外は全く同じように動作します。
+class PlayfulDogAssistant extends PlayfulPetAssistant{
+    public PlayfulPet createPlayfulPet(){
+        return new Dog(RandomWrapper.getRanDouble(0.15,1.3), RandomWrapper.getRanDouble(9.5,25.8), RandomWrapper.ranBoolean() ? "male" : "female");
+    }
+}
+
+class PlayfulRabbitAssistant extends PlayfulPetAssistant{
+    public PlayfulPet createPlayfulPet(){
+        return new Rabbit(RandomWrapper.getRanDouble(0.15,0.4), RandomWrapper.getRanDouble(2.2,10.2), RandomWrapper.ranBoolean() ? "male" : "female");
+    }
+}
+
+class Main{
+    public static void main(String[] args){
+        FairyWorld fairyWorld = new FairyWorld();
+        Person jessica = new Person("Jessica", "Roller", 30, 1.65, 95, "female");
+
+        fairyWorld.rentPet(new PlayfulCatAssistant(), jessica);
+
+        // その後、jessicaはdogやrabbitとも遊びます。サブクラス化してfactory methodを実装することで、異なるオブジェクトをサポートするようにコードを拡張しました。
+        fairyWorld.rentPet(new PlayfulDogAssistant(), jessica);
+        fairyWorld.rentPet(new PlayfulRabbitAssistant(), jessica);
+    }
+}
+
+このように、PlayfulPetAssistant を拡張して、異なる種類のペットをサポートするのは非常に簡単である。Factory Method のおかげで、再利用可能なクライアントを作成しました。
+Factory Method を実装するか上書きするサブクラスを作れば、PlayfulPetAssistant は無限に PlayfulPets をサポートする。
+
+
+Factory Method は特定の構造に従う傾向があります。Factory Method でオブジェクトを作成するクラスは Creator と呼ばれる。
+そして、Creator はProduct と呼ばれるオブジェクトを作成する。Creator は、CreatorA、CreatorB、CreatorC... と拡張して、ProductA、ProductB、ProductC... を作成することができる。
+以下は、一般的な Factory Method の構造を示す UML 図となる。
+https://gyazo.com/13da0d936fd4c5e17ab3495760366e5c
+
+Factory Method は再利用可能で、単一責任則を持っていますが、Creator のために多くのサブクラスを持たなければならないことに注意。
+これはまた、Creator インタフェースがサブクラスの実装に必要な抽象メソッドを追加するたびに、全てのサブクラスが独自の実装を定義する必要があることを意味する。
+しかし、抽象メソッドを全く持たずに、最初からデフォルトの Factory Method の実装を持つのが一般的になる。
+
+Create 関数は、オブジェクトの構築に使われるデータに必要なパラメータを受け取ったり、パラメータを処理することで、最終的にコンストラクタに渡される値を計算することができる。
+また、パラメータを直接コンストラクタに渡すこともできる。
+
+Factory Method は作成プロセスをカプセル化しているので、コンストラクタに渡す最終的な値を取得する前に、データの準備やデータベースからのデータの取得などのさまざまな処理を実行することができる。
+また、メソッドはパラメータを使って、どのクラスからどのコンストラクタを呼び出すかを決定することもできる。
+
+パラメータは、Creator が使用するオブジェクトインターフェースのあらゆる可能性のあるオブジェクトを作成するために十分に汎用的なものである必要がある。
+入力として配列やハッシュマップのようなものを考え、各サブクラスにデータを解析させることもできる。
+オブジェクトを作成する処理は Factory Method という別のメソッドに委ねられているので、複雑な処理を介してオブジェクトを作成することもできる。
+これには、データベースからデータにアクセスしたり、オブジェクトの構築に使われる他の関数からデータを生成したりすることが含まれる。
+また、複数のオブジェクトをプールして、その中から、Least Recently Used、スタック/キュー、ラウンドロビン、優先度付きキューを選択して返すような実装も行うことができる。
+
