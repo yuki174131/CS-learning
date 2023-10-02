@@ -1,0 +1,734 @@
+オプションが多い場合に適用できる Builder と呼ばれるものがある。Builder Pattern は、複雑なオブジェクトの構築を独自のプロセスに分離する。
+
+class Sandwich{
+    public Sandwich(String doughType, String topping1, String topping2, String topping3, String vegetable1, String vegetable2, String vegetable3, String vegetable4, String cheese, boolean ketchup, boolean mustard, boolean mayonnaise, String sauce){
+        this.doughType = doughType;
+        this.topping1 = topping1;
+        this.topping2 = topping2;
+        this.topping3 = topping3;
+        this.vegetable1 = vegetable1;
+        this.vegetable2 = vegetable2;
+        this.vegetable3 = vegetable3;
+        this.vegetable4 = vegetable4;
+        this.cheese = cheese;
+        this.ketchup = ketchup;
+        this.mustard = mustard;
+        this.mayonnaise = mayonnaise;
+        this.sauce = sauce;
+    }
+}
+
+上記だと、非常に長いコンストラクタになってしまい、ただサンドイッチをインスタンスするだけの作業になってしまう。
+サンドイッチの長さ（footlong vs half-foot-long）や種類、ブランド、調理手順についてオプションとして追加する、これらのパラメータの多くが任意となる場合もある。
+
+これらの言語でオーバーロードを介して、多くの Telescoping Constructor を行ってしまうことは、よくある悪い例として挙下られる。
+class Sandwich{
+    public Sandwich(String doughType){...};
+    public Sandwich(String doughType, String topping1){...};
+    public Sandwich(String doughType, String topping1, String topping2){...};
+    public Sandwich(String doughType, String topping1, String topping2, String topping3){...};
+    ....
+}
+
+ここでも、すべてのケースをカバーしたわけではなく、このコードは再利用可能ではなく、このクラスのインスタンス化が非常に困難であるという元々の問題はまだ修正できていない。
+
+
+ここでBuilderを利用する。
+https://gyazo.com/b6f5ae116e4ac2ef66d2d756c7028c3d
+
+Builder クラスには、複雑なオブジェクトを一度に構築するのではなく、順番に構築するための全てのメソッドが含まれている。
+
+オブジェクトを作成する準備ができたら、Creation Method が実行され、Builder は多くの場合ではリセットされる。
+Builder Pattern は複雑なオブジェクトを作成する場合や、多くのオプションを状態として持つ場合、将来オブジェクトが大きくなることがあらかじめわかっている場合に非常に便利になる。
+先ほどのサンドイッチメーカを Builder Patternを使って作成してみる。build() 関数が実行されるまでオブジェクトは作成されないことに注意。
+
+初期化が必要な状態ごとに関数を作成する。そして、ユーザーは Builder メソッドのいずれかを実行して、必要に応じてゆっくりとオブジェクトを作成し、最後に build() 関数を実行する。
+今回、多くのパラメータはオプションであり、必要な状態は doughType と topping1 だけになる。サンドイッチの生地とトッピングのデフォルト値を最初に設定する。
+これらが設定されていない場合はエラーになったり、インスタンス化する際に要求される場合がある。
+
+Builder を完全にリセットするためのリセット機能も提供する。
+サンドイッチの UML 図は以下。
+https://gyazo.com/fe24782939a5b2e85cfbc84a2dbb6332
+
+// 汎用サンドイッチ
+class Sandwich{
+    private String doughType;
+    private String topping1;
+    private String topping2;
+    private String topping3;
+    private String vegetable1;
+    private String vegetable2;
+    private String vegetable3;
+    private String vegetable4;
+    private boolean cheese;
+    private boolean ketchup;
+    private boolean mustard;
+    private boolean mayonnaise;
+    private String sauce;
+
+    public Sandwich(String doughType, String topping1, String topping2, String topping3, String vegetable1, String vegetable2, String vegetable3, String vegetable4, boolean cheese, boolean ketchup, boolean mustard, boolean mayonnaise, String sauce){
+        this.doughType = doughType;
+        this.topping1 = topping1;
+        this.topping2 = topping2;
+        this.topping3 = topping3;
+        this.vegetable1 = vegetable1;
+        this.vegetable2 = vegetable2;
+        this.vegetable3 = vegetable3;
+        this.vegetable4 = vegetable4;
+        this.cheese = cheese;
+        this.ketchup = ketchup;
+        this.mustard = mustard;
+        this.mayonnaise = mayonnaise;
+        this.sauce = sauce;
+    }
+
+    public String toString(){
+        String sandwich = this.doughType + " with " + this.topping1 + " ";
+        if(this.topping2 != null) sandwich+=this.topping2 + ", ";
+        if(this.topping3 != null) sandwich+=this.topping3 + ", ";
+        if(this.vegetable1 != null) sandwich+=this.vegetable1 + ", ";
+        if(this.vegetable2 != null) sandwich+=this.vegetable2 + ", ";
+        if(this.vegetable3 != null) sandwich+=this.vegetable3 + ", ";
+        if(this.vegetable4 != null) sandwich+=this.vegetable4 + ", ";
+        if(this.cheese) sandwich+="with cheese, ";
+        if(this.ketchup) sandwich+="with ketchup, ";
+        if(this.mustard) sandwich+="with mustard, ";
+        if(this.mayonnaise) sandwich+="with mayonnaise, ";
+        if(this.sauce != null) sandwich+="with " + this.sauce;
+
+        return sandwich;
+    }
+}
+
+// サンドイッチのBuilder。サンドイッチをbuildするためのすべてのロジックはここで行われます。入力されるパラメータのバリデータを作成して、それに応じてエラーを投げたり、サニタイズやデフォルト設定などの追加の処理を行うこともできます。
+class SandwichBuilder{
+    private final static String DEFAULT_DOUGH = "Wheat";
+    private final static String DEFAULT_TOPPING1 = "Ham";
+
+    private String doughType;
+    private String topping1;
+    private String topping2;
+    private String topping3;
+    private String vegetable1;
+    private String vegetable2;
+    private String vegetable3;
+    private String vegetable4;
+
+    // サンドイッチのいくつかのデフォルト
+    private boolean cheese;
+    private boolean ketchup;
+    private boolean mustard;
+    private boolean mayonnaise;
+    private String sauce;
+
+    public void SandwichBuilder(){
+        this.reset();
+    }
+
+    public void addDoughType(String doughType){ this.doughType = doughType; }
+    public void addTopping1(String topping){ this.topping1 = topping; }
+    public void addTopping2(String topping){ this.topping2 = topping; }
+    public void addTopping3(String topping){ this.topping3 = topping; }
+    public void addVegetable1(String vegetable){ this.vegetable1 = vegetable; }
+    public void addVegetable2(String vegetable){ this.vegetable2 = vegetable; }
+    public void addVegetable3(String vegetable){ this.vegetable3 = vegetable; }
+    public void addVegetable4(String vegetable){ this.vegetable4 = vegetable; }
+    public void addCheese(){ this.cheese = true; }
+    public void noCheese(){ this.cheese = false; }
+    public void addKetchup(){ this.ketchup = true; }
+    public void noKetchup(){ this.ketchup = false; }
+    public void addMustard(){ this.mustard = true; }
+    public void noMustard(){ this.mustard = false; }
+    public void addMayo(){ this.mayonnaise = true; }
+    public void noMayo(){ this.mayonnaise = false; }
+    public void addSauce(String sauce){ this.sauce = sauce; }
+
+    // build関数。一度何かをbuildしたら、builderをresetするのは珍しくありません。
+    public Sandwich build(){
+        Sandwich s = new Sandwich(
+            this.doughType, this.topping1, this.topping2, this.topping3,
+            this.vegetable1, this.vegetable2, this.vegetable3, this.vegetable4,
+            this.cheese, this.ketchup, this.mustard, this.mayonnaise, this.sauce
+        );
+        this.reset();
+        return s;
+    }
+
+    // reset関数
+    public void reset(){
+        this.doughType = SandwichBuilder.DEFAULT_DOUGH;
+        this.topping1 = SandwichBuilder.DEFAULT_TOPPING1;
+        this.topping2 = null;
+        this.topping3 = null;
+        this.vegetable1 = null;
+        this.vegetable2 = null;
+        this.vegetable3 = null;
+        this.vegetable4 = null;
+
+        // サンドイッチのいくつかのデフォルト
+        this.cheese = true;
+        this.ketchup = false;
+        this.mustard = false;
+        this.mayonnaise = false;
+        this.sauce = null;
+    }
+}
+
+class Main{
+    public static void main(String[] args){
+
+        // builderを通してサンドイッチを作成します。
+        SandwichBuilder sandwichBuilder = new SandwichBuilder();
+
+        // chicken bacon ranchサンドイッチを作ります。
+        sandwichBuilder.addDoughType("Italian");
+        sandwichBuilder.addTopping1("Chicken");
+        sandwichBuilder.addTopping2("Bacon");
+        sandwichBuilder.addSauce("Ranch");
+        sandwichBuilder.addVegetable1("Lettuce");
+        sandwichBuilder.addVegetable2("Red Onions");
+        sandwichBuilder.addVegetable3("Tomato");
+        sandwichBuilder.addCheese();
+
+        // オブジェクトのbuild
+        Sandwich chickenAndBacon = sandwichBuilder.build();
+
+        System.out.println(chickenAndBacon);
+    }
+}
+
+このように、Builder Pattern によって、Builder クラスは複雑なオブジェクトを作るという 1 つのタスクに集中することができる。
+
+さらに、Builder が処理の順序が重要になるような、少し複雑なケースがある。
+例えば、データベース内で照会される請求書の ID を表す整数のリストを取り込む Builder を考える。
+この Builder は、請求書の ID をフィルタリングしたり、指定したアルゴリズムによってソートしたりして、順序を指定できるとする。この場合、処理の順番は極めて重要であり、結果や速度に影響を与える可能性がある。
+
+
+例えば、
+builder(myIdList).sortOrder("desc").filter(">",1550).algorithm("quicksort").build()
+の実行速度は、
+builder(myIdList).filter(">",1550).sortOrder("desc").algorithm("quicksort").build()
+
+Builderの実装によって、より遅くなる可能性がある。それはリストが先にフィルタにかけられていないからである。最も重要なことは、クラスがオブジェクトを作成するという単一の責任を持ち、それが Builder Pattern を介して行われることになる。
+これにより、メソッドの順序も呼び出し元が自由に設定でき、一般性がより広がる。
+今回、サンドイッチは全ての状態は private で、セッターも持っていません。これは、サンドイッチを不変オブジェクトにした後に、サンドイッチを更新する方法がないことを意味する。
+Builder は、不変オブジェクトを作成するのにも最適で、オブジェクト作成後にセッターを通してオブジェクトの状態を構築するプロセスを分割することはできますが、これは不変オブジェクトでは不可能。
+
+フレームワークやライブラリの中では、Builder クラスにメソッドチェーンを適用している場合もある。
+このように、void の代わりにビルダー自身を返すことによって、可読性を上げることもできる。それでは、Builder 関数を更新して、メソッドチェーンできるようにする。
+
+class Sandwich{
+    private String doughType;
+    private String topping1;
+    private String topping2;
+    private String topping3;
+    private String vegetable1;
+    private String vegetable2;
+    private String vegetable3;
+    private String vegetable4;
+    private boolean cheese;
+    private boolean ketchup;
+    private boolean mustard;
+    private boolean mayonnaise;
+    private String sauce;
+
+    public Sandwich(String doughType, String topping1, String topping2, String topping3, String vegetable1, String vegetable2, String vegetable3, String vegetable4, boolean cheese, boolean ketchup, boolean mustard, boolean mayonnaise, String sauce){
+        this.doughType = doughType;
+        this.topping1 = topping1;
+        this.topping2 = topping2;
+        this.topping3 = topping3;
+        this.vegetable1 = vegetable1;
+        this.vegetable2 = vegetable2;
+        this.vegetable3 = vegetable3;
+        this.vegetable4 = vegetable4;
+        this.cheese = cheese;
+        this.ketchup = ketchup;
+        this.mustard = mustard;
+        this.mayonnaise = mayonnaise;
+        this.sauce = sauce;
+    }
+
+    public String toString(){
+        String sandwich = this.doughType + " with " + this.topping1 + " ";
+        if(this.topping2 != null) sandwich+=this.topping2 + ", ";
+        if(this.topping3 != null) sandwich+=this.topping3 + ", ";
+        if(this.vegetable1 != null) sandwich+=this.vegetable1 + ", ";
+        if(this.vegetable2 != null) sandwich+=this.vegetable2 + ", ";
+        if(this.vegetable3 != null) sandwich+=this.vegetable3 + ", ";
+        if(this.vegetable4 != null) sandwich+=this.vegetable4 + ", ";
+        if(this.cheese) sandwich+="with cheese, ";
+        if(this.ketchup) sandwich+="with ketchup, ";
+        if(this.mustard) sandwich+="with mustard, ";
+        if(this.mayonnaise) sandwich+="with mayonnaise, ";
+        if(this.sauce != null) sandwich+="with " + this.sauce;
+
+        return sandwich;
+    }
+}
+
+class SandwichBuilder{
+    private final static String DEFAULT_DOUGH = "Wheat";
+    private final static String DEFAULT_TOPPING1 = "Ham";
+
+    private String doughType;
+    private String topping1;
+    private String topping2;
+    private String topping3;
+    private String vegetable1;
+    private String vegetable2;
+    private String vegetable3;
+    private String vegetable4;
+
+    private boolean cheese;
+    private boolean ketchup;
+    private boolean mustard;
+    private boolean mayonnaise;
+    private String sauce;
+
+    public SandwichBuilder(){
+        this.reset();
+    }
+
+    public SandwichBuilder addDoughType(String doughType){
+        this.doughType = doughType;
+        return this;
+    }
+
+    public SandwichBuilder addTopping1(String topping){
+        this.topping1 = topping;
+        return this;
+    }
+
+    public SandwichBuilder addTopping2(String topping){
+        this.topping2 = topping;
+        return this;
+    }
+
+    public SandwichBuilder addTopping3(String topping){
+        this.topping3 = topping;
+        return this;
+    }
+
+    public SandwichBuilder addVegetable1(String vegetable){
+        this.vegetable1 = vegetable;
+        return this;
+    }
+
+    public SandwichBuilder addVegetable2(String vegetable){
+        this.vegetable2 = vegetable;
+        return this;
+    }
+
+    public SandwichBuilder addVegetable3(String vegetable){
+        this.vegetable3 = vegetable;
+        return this;
+    }
+
+    public SandwichBuilder addVegetable4(String vegetable){
+        this.vegetable4 = vegetable;
+        return this;
+    }
+
+    public SandwichBuilder addCheese(){
+        this.cheese = true;
+        return this;
+    }
+
+    public SandwichBuilder noCheese(){
+        this.cheese = false;
+        return this;
+    }
+
+    public SandwichBuilder addKetchup(){
+        this.ketchup = true;
+        return this;
+    }
+
+    public SandwichBuilder noKetchup(){
+        this.ketchup = false;
+        return this;
+    }
+
+    public SandwichBuilder addMustard(){
+        this.mustard = true;
+        return this;
+    }
+
+    public SandwichBuilder noMustard(){
+        this.mustard = false;
+        return this;
+    }
+
+    public SandwichBuilder addMayo(){
+        this.mayonnaise = true;
+        return this;
+    }
+
+    public SandwichBuilder noMayo(){
+        this.mayonnaise = false;
+        return this;
+    }
+
+    public SandwichBuilder addSauce(String sauce){
+        this.sauce = sauce;
+        return this;
+    }
+
+    public Sandwich build(){
+        Sandwich s = new Sandwich(
+            this.doughType, this.topping1, this.topping2, this.topping3,
+            this.vegetable1, this.vegetable2, this.vegetable3, this.vegetable4,
+            this.cheese, this.ketchup, this.mustard, this.mayonnaise, this.sauce
+        );
+        this.reset();
+        return s;
+    }
+
+    public SandwichBuilder reset(){
+        this.doughType = SandwichBuilder.DEFAULT_DOUGH;
+        this.topping1 = SandwichBuilder.DEFAULT_TOPPING1;
+        this.topping2 = null;
+        this.topping3 = null;
+        this.vegetable1 = null;
+        this.vegetable2 = null;
+        this.vegetable3 = null;
+        this.vegetable4 = null;
+
+        this.cheese = true;
+        this.ketchup = false;
+        this.mustard = false;
+        this.mayonnaise = false;
+        this.sauce = null;
+        return this;
+    }
+}
+
+class Main{
+    public static void main(String[] args){
+
+        SandwichBuilder sandwichBuilder = new SandwichBuilder();
+
+        // chicken bacon ranchサンドイッチを作ります。builderは今メソッドチェーンを使います。
+        sandwichBuilder.addDoughType("Italian").addTopping1("Chicken")
+            .addTopping2("Bacon").addSauce("Ranch")
+            .addVegetable1("Lettuce").addVegetable2("Red Onions")
+            .addVegetable3("Tomato").addCheese();
+
+        Sandwich chickenAndBacon = sandwichBuilder.build();
+
+        System.out.println(chickenAndBacon);
+    }
+}
+
+Builder は非常に汎用性が高く、強力で、複雑なオプションや順番に基づいてオブジェクトを作成することにのみに焦点を当てている。
+また Director を開発することもできる。Director とは、特定の Builder を使用してオブジェクトを構築するために、順番と引数がすでに定義されているメソッドを持つクラスのことを指す。
+https://gyazo.com/2a029580ee80f6881793918f402789a1
+
+例えば、Director のメソッドは、Builder を取得したり、Builder で初期化したりして stepA、stepB、stepC... を実行し、Builder を返すことができる。
+その後、build() 関数を実行したり、さらに builder 関数を実行して、オブジェクトをさらにカスタマイズすることができる。
+FairyWorld 内では、サンドイッチを表す文字列を取得する orderSandwich(String sandwich) メソッドを作成します。これには enum キーワードを使って、列挙型メンバーの名前を指定することができる。
+これから、Director のメソッドを使ってサンドイッチを作っていく。「Chicken and Bacon」「Steak and Cheese」「Spicy Italian」「Tuna and Egg」を用意する。
+Director はオブジェクトを返すのではなく、Builder を返すので、作成するオブジェクトをさらにチェーン化してカスタマイズすることができることに注意。
+例えば、調味料や野菜を追加または削除するオプションを呼び出し元に与えることができる。
+
+Builder 自体も拡張する。野菜のオプションがさらに必要な場合は、Builder に簡単に追加することができる。一番の利点は、Builder はコンストラクタと違って完全に下位互換性がある。
+つまり、将来の変更があっても、Builder を使っている他のクライアントコードを変更することなく動作するということを意味する。
+これは多くのユーザーに使われているようなソフトウェアが新機能を拡張したり提供したりする際、特に重要な要素になる。
+それでは、Director を作成し、Builder に野菜のオプションを追加し、ユーザーがサンドイッチのサイズを選べるようにする。サンドウィッチのサイズは、footlong や half footlong にすることもできる。
+
+class Sandwich{
+    private String doughType;
+    private String topping1;
+    private String topping2;
+    private String topping3;
+    private String vegetable1;
+    private String vegetable2;
+    private String vegetable3;
+    private String vegetable4;
+    private String vegetable5;
+    private double sizeCm;
+    private boolean cheese;
+    private boolean ketchup;
+    private boolean mustard;
+    private boolean mayonnaise;
+    private String sauce;
+
+    public Sandwich(String doughType, double sizeCm, String topping1, String topping2, String topping3, String vegetable1, String vegetable2, String vegetable3, String vegetable4, String vegetable5, boolean cheese, boolean ketchup, boolean mustard, boolean mayonnaise, String sauce){
+        this.doughType = doughType;
+        this.sizeCm = sizeCm;
+        this.topping1 = topping1;
+        this.topping2 = topping2;
+        this.topping3 = topping3;
+        this.vegetable1 = vegetable1;
+        this.vegetable2 = vegetable2;
+        this.vegetable3 = vegetable3;
+        this.vegetable4 = vegetable4;
+        this.vegetable5 = vegetable5;
+        this.cheese = cheese;
+        this.ketchup = ketchup;
+        this.mustard = mustard;
+        this.mayonnaise = mayonnaise;
+        this.sauce = sauce;
+    }
+
+    public String toString(){
+        String sandwich = this.doughType + " bread, size " + this.sizeCm + "cm with " + this.topping1 + ", ";
+        if(this.topping2 != null) sandwich+=this.topping2 + ", ";
+        if(this.topping3 != null) sandwich+=this.topping3 + ", ";
+        if(this.vegetable1 != null) sandwich+=this.vegetable1 + ", ";
+        if(this.vegetable2 != null) sandwich+=this.vegetable2 + ", ";
+        if(this.vegetable3 != null) sandwich+=this.vegetable3 + ", ";
+        if(this.vegetable4 != null) sandwich+=this.vegetable4 + ", ";
+        if(this.cheese) sandwich+="with cheese, ";
+        if(this.ketchup) sandwich+="with ketchup, ";
+        if(this.mustard) sandwich+="with mustard, ";
+        if(this.mayonnaise) sandwich+="with mayonnaise, ";
+        if(this.sauce != null) sandwich+="with " + this.sauce;
+
+        return sandwich;
+    }
+}
+
+class SandwichBuilder{
+    private final static String DEFAULT_DOUGH = "Wheat";
+    private final static String DEFAULT_TOPPING1 = "Ham";
+    private final static double DEFAULT_SIZE_CM = 15.24;
+
+    private String doughType;
+    private double sizeCm;
+    private String topping1;
+    private String topping2;
+    private String topping3;
+    private String vegetable1;
+    private String vegetable2;
+    private String vegetable3;
+    private String vegetable4;
+    private String vegetable5;
+
+    private boolean cheese;
+    private boolean ketchup;
+    private boolean mustard;
+    private boolean mayonnaise;
+    private String sauce;
+
+    public SandwichBuilder(){
+        this.reset();
+    }
+
+    public SandwichBuilder addDoughType(String doughType){
+        this.doughType = doughType;
+        return this;
+    }
+
+    public SandwichBuilder addTopping1(String topping){
+        this.topping1 = topping;
+        return this;
+    }
+
+    public SandwichBuilder addTopping2(String topping){
+        this.topping2 = topping;
+        return this;
+    }
+
+    public SandwichBuilder addTopping3(String topping){
+        this.topping3 = topping;
+        return this;
+    }
+
+    public SandwichBuilder addVegetable1(String vegetable){
+        this.vegetable1 = vegetable;
+        return this;
+    }
+
+    public SandwichBuilder addVegetable2(String vegetable){
+        this.vegetable2 = vegetable;
+        return this;
+    }
+
+    public SandwichBuilder addVegetable3(String vegetable){
+        this.vegetable3 = vegetable;
+        return this;
+    }
+
+    public SandwichBuilder addVegetable4(String vegetable){
+        this.vegetable4 = vegetable;
+        return this;
+    }
+
+    public SandwichBuilder addVegetable5(String vegetable){
+        this.vegetable5 = vegetable;
+        return this;
+    }
+
+    public SandwichBuilder addCheese(){
+        this.cheese = true;
+        return this;
+    }
+
+    public SandwichBuilder noCheese(){
+        this.cheese = false;
+        return this;
+    }
+
+    public SandwichBuilder addKetchup(){
+        this.ketchup = true;
+        return this;
+    }
+
+    public SandwichBuilder noKetchup(){
+        this.ketchup = false;
+        return this;
+    }
+
+    public SandwichBuilder addMustard(){
+        this.mustard = true;
+        return this;
+    }
+
+    public SandwichBuilder noMustard(){
+        this.mustard = false;
+        return this;
+    }
+
+    public SandwichBuilder addMayo(){
+        this.mayonnaise = true;
+        return this;
+    }
+
+    public SandwichBuilder noMayo(){
+        this.mayonnaise = false;
+        return this;
+    }
+
+    public SandwichBuilder addSauce(String sauce){
+        this.sauce = sauce;
+        return this;
+    }
+
+    public SandwichBuilder setSize(double size){
+        this.sizeCm = size;
+        return this;
+    }
+
+    public Sandwich build(){
+        Sandwich s = new Sandwich(
+            this.doughType, this.sizeCm, this.topping1, this.topping2, this.topping3,
+            this.vegetable1, this.vegetable2, this.vegetable3, this.vegetable4,this.vegetable5,
+            this.cheese, this.ketchup, this.mustard, this.mayonnaise, this.sauce
+        );
+        this.reset();
+        return s;
+    }
+
+    public SandwichBuilder reset(){
+        this.doughType = SandwichBuilder.DEFAULT_DOUGH;
+        this.sizeCm = SandwichBuilder.DEFAULT_SIZE_CM;
+        this.topping1 = SandwichBuilder.DEFAULT_TOPPING1;
+        this.topping2 = null;
+        this.topping3 = null;
+        this.vegetable1 = null;
+        this.vegetable2 = null;
+        this.vegetable3 = null;
+        this.vegetable4 = null;
+        this.vegetable5 = null;
+
+        this.cheese = true;
+        this.ketchup = false;
+        this.mustard = false;
+        this.mayonnaise = false;
+        this.sauce = null;
+        return this;
+    }
+}
+
+// builderのためのメニュー
+enum SandwichMenu{
+    CHICKEN_AND_BACON,
+    STEAK_AND_CHEESE,
+    SPICY_ITALIAN,
+    TUNA_AND_EGG,
+}
+
+enum SandwichSize{
+    FOOTLONG,
+    HALF_FOOTLONG,
+}
+
+// 全てのdirectorメソッドを持つ、directorクラス
+class FairyWorldSandwichDirector{
+    public static SandwichBuilder chickenAndBacon(SandwichBuilder builder){
+        builder.addDoughType("Italian").addTopping1("Chicken")
+                    .addTopping2("Bacon").addSauce("Ranch")
+                    .addVegetable1("Lettuce").addVegetable2("Red Onions")
+                    .addVegetable3("Tomato").addCheese();
+        return builder;
+    }
+
+    public static SandwichBuilder steakAndCheese(SandwichBuilder builder){
+        builder.addDoughType("Wheat").addTopping1("Steak")
+                    .addTopping2("Steak")
+                    .addVegetable1("Green Peppers").addVegetable2("Red Onions")
+                    .addCheese();
+        return builder;
+    }
+
+    public static SandwichBuilder spicyItalian(SandwichBuilder builder){
+        builder.addDoughType("Wheat").addTopping1("Pepperoni")
+                    .addTopping2("Salami")
+                    .addVegetable1("Lettuce").addVegetable2("Red Onions").addVegetable3("Tomato").addVegetable4("Cucumbers").addVegetable5("Jalapeno")
+                    .addMayo();
+        return builder;
+    }
+
+    public static SandwichBuilder tunaAndEgg(SandwichBuilder builder){
+        builder.addDoughType("Italian Herbs").addTopping1("Tuna")
+                    .addTopping2("Eggs")
+                    .addVegetable1("Lettuce").addVegetable2("Red Onions")
+                    .addMayo();
+        return builder;
+    }
+}
+
+class FairyWorld{
+    public Sandwich orderSandwich(SandwichMenu item, SandwichSize itemSize){
+        SandwichBuilder sandwichBuilder = new SandwichBuilder();
+
+        // オブジェクトのbuild
+        switch(item){
+            case CHICKEN_AND_BACON: FairyWorldSandwichDirector.chickenAndBacon(sandwichBuilder); break;
+            case STEAK_AND_CHEESE: FairyWorldSandwichDirector.steakAndCheese(sandwichBuilder); break;
+            case SPICY_ITALIAN: FairyWorldSandwichDirector.spicyItalian(sandwichBuilder); break;
+            case TUNA_AND_EGG: FairyWorldSandwichDirector.tunaAndEgg(sandwichBuilder); break;
+        }
+
+        switch(itemSize){
+            case FOOTLONG: sandwichBuilder.setSize(15.24);
+            case HALF_FOOTLONG: sandwichBuilder.setSize(30.48);
+        }
+
+        return sandwichBuilder.build();
+    }
+}
+
+class Main{
+    public static void main(String[] args){
+        FairyWorld fairyWorld = new FairyWorld();
+
+        Sandwich chickenAndBacon = fairyWorld.orderSandwich(SandwichMenu.CHICKEN_AND_BACON, SandwichSize.FOOTLONG);
+
+        String endl = System.lineSeparator();
+        System.out.println(chickenAndBacon + endl);
+        System.out.println(fairyWorld.orderSandwich(SandwichMenu.STEAK_AND_CHEESE, SandwichSize.FOOTLONG) + endl);
+        System.out.println(fairyWorld.orderSandwich(SandwichMenu.SPICY_ITALIAN, SandwichSize.HALF_FOOTLONG) + endl);
+        System.out.println(fairyWorld.orderSandwich(SandwichMenu.TUNA_AND_EGG, SandwichSize.FOOTLONG) + endl);
+    }
+}
+
+次の図は、Builder Pattern の一般的な構造を表す。
+https://gyazo.com/d07cb518caafd82a508f10257f0ed3ab
+
+Builder Pattern は、サポートに対して余分な作業を多く必要とし、コードベースが複雑化してしまう恐れがあることに注意。
+複雑なオブジェクトの作成をクラスから切り離して、1 つの場所に集約し、単一責任則を維持するのが目的になる。
+
+
+
